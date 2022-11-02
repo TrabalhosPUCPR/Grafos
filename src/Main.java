@@ -6,5 +6,7 @@ public class Main {
     public static void main(String[] args) {
         Graph graph = Graph.createDebugGraph(false);
         ArrayList<Graph> components = graph.getComponents();
+
+        System.out.println(graph.isClique(new Object[]{7,8,9}));
     }
 }

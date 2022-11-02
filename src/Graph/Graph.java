@@ -10,7 +10,7 @@ public class Graph {
         this.nodes = new LinkedHashMap<>();
     }
 
-    public int verticesSize(){return this.nodes.size();}
+    public int size(){return this.nodes.size();}
     public int connections(){ // adiciona 1 para todas adjacencia que cada node do grafo tem
         int con = 0;
         for(Node<?> n : this.getNodes()){
@@ -231,6 +231,15 @@ public class Graph {
         }
         return minTree;
     }
+    private static boolean alreadyAdded(ArrayList<Edge> edges, Edge edge){
+        for(Edge e : edges){
+            if(e.equals(edge)){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public ArrayList<Graph> getComponents(){
         ArrayList<Graph> components = new ArrayList<>();
         ArrayList<Node<?>> nodesList = this.getNodesList();
@@ -254,13 +263,34 @@ public class Graph {
         return component;
     }
 
-    private static boolean alreadyAdded(ArrayList<Edge> edges, Edge edge){
-        for(Edge e : edges){
-            if(e.equals(edge)){
-                return true;
+    public boolean isClique(Object[] nodeKeys){
+        Node<?>[] nodes = new Node<?>[nodeKeys.length];
+        for(int i = 0; i < nodeKeys.length; i++){
+            nodes[i] = getNode(nodeKeys[i]);
+            if(nodes[i] == null){
+                return false;
             }
         }
-        return false;
+        return isClique(nodes);
+    }
+
+    public boolean isClique(Node<?>[] nodes){
+        for(Node<?> node : nodes){
+            Node<?>[] adj = node.getAdjacencies();
+            int connected = 0;
+            for (Node<?> n : nodes) {
+                for (Node<?> adjacent : adj) {
+                    if(n.equals(adjacent)){
+                        connected++;
+                        break;
+                    }
+                }
+            }
+            if(!(connected == nodes.length-1)){
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void heapSortEdges(ArrayList<Edge> edges){
@@ -355,6 +385,7 @@ public class Graph {
             // to check if its finding components correctly
             graph.newNonDirectedAdjacency(9, 10, 10);
             graph.newNonDirectedAdjacency(10, 11, 10);
+            graph.newNonDirectedAdjacency(9, 11, 10);
         }
 
         graph.printAdjacencies();
