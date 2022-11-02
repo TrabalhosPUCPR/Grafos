@@ -61,6 +61,9 @@ public class Graph {
         nodes = this.nodes.values().toArray(nodes);
         return nodes;
     }
+    public ArrayList<Node<?>> getNodesList() {
+        return new ArrayList<>(Arrays.asList(getNodes()));
+    }
 
     public void printAdjacencies(){ // pega todas as adjacencias e printa na tela
         for (Node<?> node : getNodes()) {
@@ -228,6 +231,28 @@ public class Graph {
         }
         return minTree;
     }
+    public ArrayList<Graph> getComponents(){
+        ArrayList<Graph> components = new ArrayList<>();
+        ArrayList<Node<?>> nodesList = this.getNodesList();
+        while(!nodesList.isEmpty()){
+            Graph component = getComponent(nodesList.get(0));
+            components.add(component);
+            for(Node<?> node : component.getNodes()){
+                nodesList.remove(node);
+            }
+        }
+        return components;
+    }
+
+    private Graph getComponent(Node<?> origin){
+        Graph component = new Graph();
+        BfsIterator bfs = new BfsIterator(origin);
+        component.add(origin);
+        while (bfs.ready()){
+            component.add(bfs.next());
+        }
+        return component;
+    }
 
     private static boolean alreadyAdded(ArrayList<Edge> edges, Edge edge){
         for(Edge e : edges){
@@ -302,7 +327,7 @@ public class Graph {
             graph.newAdjacency("c", "e", 1);
             graph.newAdjacency("d", "e", 2);
         }else{
-            keys = new Object[] {0, 1, 2, 3, 4, 5, 6, 7, 8};
+            keys = new Object[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
             createGraph(graph, keys);
             iteratorStart = 0;
@@ -326,6 +351,10 @@ public class Graph {
             graph.newNonDirectedAdjacency(5, 3, 14);
             graph.newNonDirectedAdjacency(5, 4, 10);
             graph.newNonDirectedAdjacency(3, 4, 9);
+
+            // to check if its finding components correctly
+            graph.newNonDirectedAdjacency(9, 10, 10);
+            graph.newNonDirectedAdjacency(10, 11, 10);
         }
 
         graph.printAdjacencies();
