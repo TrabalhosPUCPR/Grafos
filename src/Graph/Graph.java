@@ -11,7 +11,7 @@ public class Graph {
     }
 
     public int size(){return this.nodes.size();}
-    public int connections(){ // adiciona 1 para todas adjacencia que cada node do grafo tem
+    public int connections(){ // adiciona 1 para todas adjacencias que cada node do grafo tem
         int con = 0;
         for(Node<?> n : this.getNodes()){
             con += n.getAdjacencies().length;
@@ -64,7 +64,7 @@ public class Graph {
         nodes = this.nodes.values().toArray(nodes);
         return nodes;
     }
-    public ArrayList<Node<?>> getNodesList() {
+    public List<Node<?>> getNodesList() {
         return new ArrayList<>(Arrays.asList(getNodes()));
     }
 
@@ -130,9 +130,9 @@ public class Graph {
             current = previousNode.get(current.toString());
         }
         path.add(origin);
+        Collections.reverse(path);
         shortestPath.add(path);
         shortestPath.add(shortest ? distances.get(destination.toString()) : Math.pow(distances.get(destination.toString()), -1));
-        Collections.reverse(path);
         return shortestPath;
     }
 
@@ -199,10 +199,9 @@ public class Graph {
         public boolean equals(Edge edge) {
             return (edge.getOriginNode() == this.node1 || edge.getOriginNode() == this.node2) && (edge.getDestinationNode() == this.node1 || edge.getDestinationNode() == this.node2);
         }
-
         @Override
-        public int compareTo(Edge o) {
-            return this.weight - o.weight;
+        public int compareTo(Edge edge) {
+            return this.weight - edge.weight;
         }
     }
 
@@ -220,7 +219,7 @@ public class Graph {
             }
         }
         // ordena o arraylist baseado no peso das arestas
-        heapSortEdges(edges);
+        Collections.sort(edges);
 
         Graph minTree = new Graph();
         for(Edge e : edges){
@@ -228,8 +227,8 @@ public class Graph {
             Node<?> destinationNode = new Node<>(e.getDestinationNode().getLabel());
             minTree.add(originNode);
             minTree.add(destinationNode);
-            // SE algum adjacente dentro da arvore for adjacente ao node de origem, quebra o bloco de codigo inteiro
-            if(minTree.search(originNode, destinationNode)){
+            // SE ja tiver uma conexao entre o node de origem e o de destino, pula pra prox iteracao
+            if(minTree.search(originNode, destinationNode)){ // o search faz bfs na arvore e retorna verdadeiro qnd encontra o destino
                 continue;
             }
             minTree.newNonDirectedAdjacency(originNode, destinationNode, e.getWeight());
@@ -247,9 +246,9 @@ public class Graph {
 
     public ArrayList<Graph> getComponents(){
         ArrayList<Graph> components = new ArrayList<>();
-        ArrayList<Node<?>> nodesList = this.getNodesList();
+        LinkedList<Node<?>> nodesList = new LinkedList<>(this.getNodesList());
         while(!nodesList.isEmpty()){
-            Graph component = getComponent(nodesList.get(0));
+            Graph component = getComponent(nodesList.getFirst());
             components.add(component);
             for(Node<?> node : component.getNodes()){
                 nodesList.remove(node);
@@ -297,31 +296,6 @@ public class Graph {
         }
         return true;
     }
-
-    private static void heapSortEdges(ArrayList<Edge> edges){
-        int n = edges.size();
-        for (int i = n / 2 - 1; i >= 0; i--) heapify(edges, n, i);
-        for (int i = n - 1; i > 0; i--) {
-            Edge temp = edges.get(0);
-            edges.set(0, edges.get(i));
-            edges.set(i, temp);
-            heapify(edges, i, 0);
-        }
-    }
-    private static void heapify(ArrayList<Edge> edges, int n, int i){
-        int largest = i;
-        int l = 2 * i + 1;
-        int r = 2 * i + 2;
-        if (l < n && edges.get(l).weight > edges.get(largest).getWeight()) largest = l;
-        if (r < n && edges.get(r).weight > edges.get(largest).getWeight()) largest = r;
-        if (largest != i) {
-            Edge swap = edges.get(i);
-            edges.set(i, edges.get(largest));
-            edges.set(largest, swap);
-            heapify(edges, n, largest);
-        }
-    }
-
 
     @Override
     public String toString() {
@@ -414,7 +388,7 @@ public class Graph {
         System.out.println("ShortestPath: " + graph.getShortestPath(pathStart, pathEnd));
         System.out.println("LongestPath: " + graph.getLongestPath(pathStart, pathEnd).get(0));
 
-        System.out.println("Nodes at distance 3 from node: " + graph.adjacentNodesAtDistance(pathStart, distance));
+        System.out.println("Nodes at distance 3 from node '" + pathStart + "': " + graph.adjacentNodesAtDistance(pathStart, distance));
         return graph;
     }
 }
