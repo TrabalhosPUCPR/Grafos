@@ -41,8 +41,11 @@ public class Graph {
     }
 
     public boolean newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
-        if(this.nodes.get(node2.toString()) == null){ // caso o node2 nao exista so retorna
-            return false;
+        if(this.nodes.get(node1.toString()) == null){
+            this.add(new Node<>(node1));
+        }
+        if(this.nodes.get(node2.toString()) == null){
+            this.add(new Node<>(node2));
         }
         this.nodes.get(node1.toString()).newAdjacency(this.nodes.get(node2.toString()), weight);
         return true; // verdadeiro quando foi possivel adicionar
@@ -220,13 +223,18 @@ public class Graph {
         heapSortEdges(edges);
 
         Graph minTree = new Graph();
-        HashSet<Node<?>> addedSet = new HashSet<>();
         for(Edge e : edges){
-            if(addedSet.add(e.node1) || addedSet.add(e.node2)){
-                e.getOriginNode().newAdjacency(e.getDestinationNode(), e.getWeight());
-                e.getDestinationNode().newAdjacency(e.getOriginNode(), e.getWeight());
-                minTree.add(e.getOriginNode());
-                minTree.add(e.getDestinationNode());
+            Node<?> originNode = new Node<>(e.getOriginNode().getLabel());
+            Node<?> destinationNode = new Node<>(e.getDestinationNode().getLabel());
+            minTree.add(originNode);
+            minTree.add(destinationNode);
+            con: {
+                for(Node<?> node : minTree.getNode(originNode).getAdjacencies()){
+                    if(minTree.search(node, destinationNode)){
+                        break con;
+                    }
+                }
+                minTree.newNonDirectedAdjacency(originNode, destinationNode, e.getWeight());
             }
         }
         return minTree;
