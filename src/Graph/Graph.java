@@ -11,7 +11,7 @@ public class Graph {
     }
 
     public int size(){return this.nodes.size();}
-    public int connections(){ // adiciona 1 para todas adjacencias que cada node do grafo tem
+    public int connections(){
         int con = 0;
         for(Node<?> n : this.getNodes()){
             con += n.getAdjacencies().length;
@@ -19,7 +19,7 @@ public class Graph {
         return con;
     }
 
-    public boolean add(Node<?> node){ // adiciona no grafo o node, caso ja exista, nao faz nada
+    public boolean add(Node<?> node){ // adiciona o node no grafo, caso ja exista, nao faz nada
         if(this.nodes.get(node.toString()) == null){
             this.nodes.put(node.toString(), node);
             return true;
@@ -27,20 +27,15 @@ public class Graph {
         return false;
     }
 
-    public boolean contains(Node<?> node){
-        for(Node<?> n : this.getNodes()){
-            if(node.equals(n)){
-                return true;
-            }
-        }
-        return false;
+    public boolean contains(Object nodeKey){
+        return this.nodes.get(nodeKey.toString()) != null;
     }
 
     public Node<?> getNode(Object key){
         return this.nodes.get(key.toString());
     }
 
-    public boolean newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
+    public void newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
         if(this.nodes.get(node1.toString()) == null){
             this.add(new Node<>(node1));
         }
@@ -48,11 +43,11 @@ public class Graph {
             this.add(new Node<>(node2));
         }
         this.nodes.get(node1.toString()).newAdjacency(this.nodes.get(node2.toString()), weight);
-        return true; // verdadeiro quando foi possivel adicionar
     }
-    public boolean newNonDirectedAdjacency(Object node1, Object node2, int weight){
+    public void newNonDirectedAdjacency(Object node1, Object node2, int weight){
         // chama a msm funcao em cima soq duas vezes para cada node
-        return newAdjacency(node1, node2, weight) && newAdjacency(node2, node1, weight); // retorna verdadeiro se os dois tiveram sucesso
+        newAdjacency(node1, node2, weight);
+        newAdjacency(node2, node1, weight);
     }
 
     public void setNode(Node<?> node){
@@ -183,19 +178,15 @@ public class Graph {
             this.node2 = node2;
             this.weight = weight;
         }
-
         public Node<?> getOriginNode() {
             return node1;
         }
-
         public Node<?> getDestinationNode() {
             return node2;
         }
-
         public int getWeight() {
             return weight;
         }
-
         public boolean equals(Edge edge) {
             return (edge.getOriginNode() == this.node1 || edge.getOriginNode() == this.node2) && (edge.getDestinationNode() == this.node1 || edge.getDestinationNode() == this.node2);
         }
@@ -204,7 +195,9 @@ public class Graph {
             return this.weight - edge.weight;
         }
     }
-
+    public Graph genMinimumSpanningTree(){
+        return Graph.genMinimumSpanningTree(this);
+    }
     public static Graph genMinimumSpanningTree(Graph graph){
         Node<?>[] nodes = graph.getNodes();
         ArrayList<Edge> edges = new ArrayList<>();
@@ -220,7 +213,6 @@ public class Graph {
         }
         // ordena o arraylist baseado no peso das arestas
         Collections.sort(edges);
-
         Graph minTree = new Graph();
         for(Edge e : edges){
             Node<?> originNode = new Node<>(e.getOriginNode().getLabel());
@@ -268,14 +260,7 @@ public class Graph {
     }
 
     public boolean isClique(Object[] nodeKeys){
-        Node<?>[] nodes = new Node<?>[nodeKeys.length];
-        for(int i = 0; i < nodeKeys.length; i++){
-            nodes[i] = getNode(nodeKeys[i]);
-            if(nodes[i] == null){
-                return false;
-            }
-        }
-        return isClique(nodes);
+        return isClique(getNodes(nodeKeys));
     }
 
     public boolean isClique(Node<?>[] nodes){
@@ -296,6 +281,34 @@ public class Graph {
         }
         return true;
     }
+    private Node<?>[] getNodes(Object[] nodeKeys) {
+        Node<?>[] nodes = new Node<?>[nodeKeys.length];
+        for(int i = 0; i < nodeKeys.length; i++){
+            if(getNode(nodeKeys[i]) != null){
+                nodes[i] = getNode(nodeKeys[i]);
+            }
+        }
+        return nodes;
+    }
+
+    public boolean isMaximalClique(Object[] nodeKeys){
+        return isMaximalClique(getNodes(nodeKeys));
+    }
+    public boolean isMaximalClique(Node<?>[] nodes){
+        if(isClique(nodes)){
+            Node<?>[] maxCliqueCheck = Arrays.copyOf(nodes, nodes.length+1);
+            for(Node<?> node : nodes){
+                for(Node<?> adj : node.getAdjacencies()){
+                    maxCliqueCheck[nodes.length] = adj;
+                    if(isClique(maxCliqueCheck)){
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public String toString() {
@@ -307,7 +320,7 @@ public class Graph {
             graph.add(new Node<>(key));
         }
     }
-    
+
     public static Graph createDebugGraph(boolean directed){
         Graph graph = new Graph();
 
@@ -336,7 +349,7 @@ public class Graph {
             graph.newAdjacency("c", "e", 1);
             graph.newAdjacency("d", "e", 2);
         }else{
-            keys = new Object[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+            keys = new Object[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
 
             createGraph(graph, keys);
             iteratorStart = 0;
@@ -365,6 +378,9 @@ public class Graph {
             graph.newNonDirectedAdjacency(9, 10, 10);
             graph.newNonDirectedAdjacency(10, 11, 10);
             graph.newNonDirectedAdjacency(9, 11, 10);
+            graph.newNonDirectedAdjacency(11, 12, 10);
+            graph.newNonDirectedAdjacency(12, 10, 10);
+            graph.newNonDirectedAdjacency(12, 9, 10);
         }
 
         graph.printAdjacencies();
