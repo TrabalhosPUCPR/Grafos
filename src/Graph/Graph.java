@@ -228,14 +228,11 @@ public class Graph {
             Node<?> destinationNode = new Node<>(e.getDestinationNode().getLabel());
             minTree.add(originNode);
             minTree.add(destinationNode);
-            con: {
-                for(Node<?> node : minTree.getNode(originNode).getAdjacencies()){
-                    if(minTree.search(node, destinationNode)){
-                        break con;
-                    }
-                }
-                minTree.newNonDirectedAdjacency(originNode, destinationNode, e.getWeight());
+            // SE algum adjacente dentro da arvore for adjacente ao node de origem, quebra o bloco de codigo inteiro
+            if(minTree.search(originNode, destinationNode)){
+                continue;
             }
+            minTree.newNonDirectedAdjacency(originNode, destinationNode, e.getWeight());
         }
         return minTree;
     }
