@@ -55,9 +55,9 @@ public class Node<T> {
         return this.label.toString();
     }
 
-    protected void newAdjacency(Node<?> node, int weight){ // adiciona no hashmap de adjacencias
+    protected boolean newAdjacency(Node<?> node, int weight){ // adiciona no hashmap de adjacencias
         // a chave e o rotulo, e cria um adjacencyholder pra guarda o peso e o valor
-        this.adjacencies.put(node.toString(), new AdjacencyHolder(node, weight));
+        return this.adjacencies.put(node.toString(), new AdjacencyHolder(node, weight)) != null;
     }
     public Node<?> getAdjacency(String key){ // retorna a adjacencia se a chave existir
         AdjacencyHolder adjacent = this.adjacencies.get(key);
@@ -97,8 +97,11 @@ public class Node<T> {
         }
         return sum;
     }
-
-    public boolean equals(Node<?> n) {
-        return n.getLabel().equals(this.label);
+    @Override
+    public boolean equals(Object obj) {
+        if(obj.getClass() == getClass()){
+            return obj.toString().equals(this.toString());
+        }
+        return false;
     }
 }

@@ -27,6 +27,10 @@ public class Graph {
         return false;
     }
 
+    public boolean remove(Object key){
+        return this.nodes.remove(key.toString()) != null;
+    }
+
     public boolean contains(Object nodeKey){
         return this.nodes.get(nodeKey.toString()) != null;
     }
@@ -35,19 +39,20 @@ public class Graph {
         return this.nodes.get(key.toString());
     }
 
-    public void newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
+    public boolean newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
         if(this.nodes.get(node1.toString()) == null){
             this.add(new Node<>(node1));
         }
         if(this.nodes.get(node2.toString()) == null){
             this.add(new Node<>(node2));
         }
-        this.nodes.get(node1.toString()).newAdjacency(this.nodes.get(node2.toString()), weight);
+        return this.nodes.get(node1.toString()).newAdjacency(this.nodes.get(node2.toString()), weight);
     }
-    public void newNonDirectedAdjacency(Object node1, Object node2, int weight){
+    public boolean newNonDirectedAdjacency(Object node1, Object node2, int weight){
         // chama a msm funcao em cima soq duas vezes para cada node
         newAdjacency(node1, node2, weight);
         newAdjacency(node2, node1, weight);
+        return true;
     }
 
     public void setNode(Node<?> node){
@@ -71,6 +76,24 @@ public class Graph {
             }
             System.out.println();
         }
+    }
+
+    public Node<?>[] getBfsTraversal(){
+        List<Node<?>> nodes = new ArrayList<>(this.nodes.size());
+        BfsIterator bfsIterator = new BfsIterator(this.getNodes()[0]);
+        while (bfsIterator.ready()){
+            nodes.add(bfsIterator.next());
+        }
+        return nodes.toArray(new Node<?>[0]);
+    }
+
+    public Node<?>[] getDfsTraversal(){
+        List<Node<?>> nodes = new ArrayList<>(this.nodes.size());
+        DfsIterator dfsIterator = new DfsIterator(this.getNodes()[0]);
+        while (dfsIterator.ready()){
+            nodes.add(dfsIterator.next());
+        }
+        return nodes.toArray(new Node<?>[0]);
     }
 
     public List<Object> getLongestPath(Object originKey, Object destinationKey){ // chama o algoritmo de djikstra com o parametro especifio
@@ -152,6 +175,15 @@ public class Graph {
         }
         return false;
     }
+    protected boolean dfsSearch(Object originKey, Object destinationKey){ // itera sobre o grafo inteiro ate encontrar o destino ou nao ter mais elementos
+        DfsIterator dfs = new DfsIterator(this.getNode(originKey));
+        while(dfs.ready()){
+            if(dfs.next().toString().equals(destinationKey.toString())){
+                return true;
+            }
+        }
+        return false;
+    }
 
     public List<?> adjacentNodesAtDistance(Object origin, int distance){
         return this.adjacentNodesAtDistance(this.getNode(origin.toString()), distance);
@@ -169,28 +201,10 @@ public class Graph {
     }
 
     // KRUSKAL ALGORITHM
-    private static class Edge implements Comparable<Edge>{
-        private final Node<?> node1, node2;
-        private final int weight;
-
-        public Edge(Node<?> node1, Node<?> node2, int weight) {
-            this.node1 = node1;
-            this.node2 = node2;
-            this.weight = weight;
-        }
-        public Node<?> getOriginNode() {
-            return node1;
-        }
-        public Node<?> getDestinationNode() {
-            return node2;
-        }
-        public int getWeight() {
-            return weight;
-        }
+    private record Edge(Node<?> node1, Node<?> node2, int weight) implements Comparable<Edge> {
         public boolean equals(Edge edge) {
-            return (edge.getOriginNode() == this.node1 || edge.getOriginNode() == this.node2) && (edge.getDestinationNode() == this.node1 || edge.getDestinationNode() == this.node2);
-        }
-        @Override
+            return (edge.node1 == this.node1 || edge.node1 == this.node2) && (edge.node2 == this.node1 || edge.node2 == this.node2);
+        }@Override
         public int compareTo(Edge edge) {
             return this.weight - edge.weight;
         }
@@ -213,17 +227,23 @@ public class Graph {
         }
         // ordena o arraylist baseado no peso das arestas
         Collections.sort(edges);
+        HashSet<Node<?>> addedNodes = new HashSet<>();
         Graph minTree = new Graph();
         for(Edge e : edges){
-            Node<?> originNode = new Node<>(e.getOriginNode().getLabel());
-            Node<?> destinationNode = new Node<>(e.getDestinationNode().getLabel());
+            if(addedNodes.size() >= nodes.length){
+                break;
+            }
+            Node<?> originNode = new Node<>(e.node1.getLabel());
+            Node<?> destinationNode = new Node<>(e.node2.getLabel());
             minTree.add(originNode);
             minTree.add(destinationNode);
             // SE ja tiver uma conexao entre o node de origem e o de destino, pula pra prox iteracao
             if(minTree.search(originNode, destinationNode)){ // o search faz bfs na arvore e retorna verdadeiro qnd encontra o destino
                 continue;
             }
-            minTree.newNonDirectedAdjacency(originNode, destinationNode, e.getWeight());
+            addedNodes.add(originNode);
+            addedNodes.add(destinationNode);
+            minTree.newNonDirectedAdjacency(originNode, destinationNode, e.weight());
         }
         return minTree;
     }
@@ -264,18 +284,16 @@ public class Graph {
     }
 
     public boolean isClique(Node<?>[] nodes){
-        for(Node<?> node : nodes){
-            Node<?>[] adj = node.getAdjacencies();
+        Queue<Node<?>> queue = new LinkedList<>(Arrays.asList(nodes));
+        while (!queue.isEmpty()){
+            Node<?> n = queue.poll();
             int connected = 0;
-            for (Node<?> n : nodes) {
-                for (Node<?> adjacent : adj) {
-                    if(n.equals(adjacent)){
-                        connected++;
-                        break;
-                    }
+            for(Node<?> node : queue){
+                if(n.getAdjacency(node.toString()) != null){
+                    connected++;
                 }
             }
-            if(!(connected == nodes.length-1)){
+            if(!(connected == queue.size())){
                 return false;
             }
         }
@@ -296,9 +314,9 @@ public class Graph {
     }
     public boolean isMaximalClique(Node<?>[] nodes){
         if(isClique(nodes)){
-            Node<?>[] maxCliqueCheck = Arrays.copyOf(nodes, nodes.length+1);
-            for(Node<?> node : nodes){
-                for(Node<?> adj : node.getAdjacencies()){
+            for(Node<?> n : nodes){
+                for(Node<?> adj : n.getAdjacencies()){
+                    Node<?>[] maxCliqueCheck = Arrays.copyOf(nodes, nodes.length+1);
                     maxCliqueCheck[nodes.length] = adj;
                     if(isClique(maxCliqueCheck)){
                         return false;
