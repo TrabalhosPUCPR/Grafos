@@ -2,7 +2,7 @@ package Graph;
 
 public class BfsIterator extends SearchIterator{
     private int layer = -1;
-    private int nextLayerSize = 0;
+    private int nextLayerSize;
     private int currentLayerLeft = 0;
 
     public BfsIterator(Node<?> origin) {

@@ -5,22 +5,33 @@ import Graph.Node.AdjacencyHolder;
 
 public class Graph {
     private final LinkedHashMap<String, Node<?>> nodes;
+    private final boolean directed;
 
     public Graph(){
         this.nodes = new LinkedHashMap<>();
+        this.directed = false;
+    }
+    public Graph(boolean directed){
+        this.nodes = new LinkedHashMap<>();
+        this.directed = directed;
     }
 
     public int size(){return this.nodes.size();}
-    public int connections(){
+    public int edgesCount(){
         int con = 0;
         for(Node<?> n : this.getNodes()){
             con += n.getAdjacencies().length;
         }
         return con;
     }
-
-    public boolean add(Node<?> node){ // adiciona o node no grafo, caso ja exista, nao faz nada
-        if(this.nodes.get(node.toString()) == null){
+    public boolean add(Object key){
+        return add(new Node<>(key), false);
+    }
+    public boolean add(Object key, boolean override){
+        return add(new Node<>(key), override);
+    }
+    private boolean add(Node<?> node, boolean override){
+        if(override || !this.contains(node.toString())){
             this.nodes.put(node.toString(), node);
             return true;
         }
@@ -28,7 +39,13 @@ public class Graph {
     }
 
     public boolean remove(Object key){
-        return this.nodes.remove(key.toString()) != null;
+        if(contains(key)){
+            for(Node<?> n : getNodes()){
+                n.removeAdjacency(key);
+            }
+            return this.nodes.remove(key.toString()) != null;
+        }
+        return false;
     }
 
     public boolean contains(Object nodeKey){
@@ -40,23 +57,25 @@ public class Graph {
     }
 
     public boolean newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
-        if(this.nodes.get(node1.toString()) == null){
+        if(!this.contains(node1.toString())){
             this.add(new Node<>(node1));
         }
-        if(this.nodes.get(node2.toString()) == null){
+        if(!this.contains(node2.toString())){
             this.add(new Node<>(node2));
         }
-        return this.nodes.get(node1.toString()).newAdjacency(this.nodes.get(node2.toString()), weight);
-    }
-    public boolean newNonDirectedAdjacency(Object node1, Object node2, int weight){
-        // chama a msm funcao em cima soq duas vezes para cada node
-        newAdjacency(node1, node2, weight);
-        newAdjacency(node2, node1, weight);
-        return true;
+        boolean added = getNode(node1).newAdjacency(getNode(node2), weight);
+        if(this.directed || !added){
+            return added;
+        }
+        return getNode(node2).newAdjacency(getNode(node1), weight);
     }
 
-    public void setNode(Node<?> node){
-        this.nodes.put(node.toString(), node);
+    public boolean removeAdjacency(Object node1, Object node2){
+        boolean check = this.getNode(node1).removeAdjacency(node2);
+        if(directed){
+            return check;
+        }
+        return check && this.getNode(node2).removeAdjacency(node1);
     }
 
     public Node<?>[] getNodes() {
@@ -66,16 +85,6 @@ public class Graph {
     }
     public List<Node<?>> getNodesList() {
         return new ArrayList<>(Arrays.asList(getNodes()));
-    }
-
-    public void printAdjacencies(){ // pega todas as adjacencias e printa na tela
-        for (Node<?> node : getNodes()) {
-            System.out.print(node + ": | ");
-            for (Node<?> nAdjacent : node.getAdjacencies()) {
-                System.out.print(nAdjacent + " | ");
-            }
-            System.out.println();
-        }
     }
 
     public Node<?>[] getBfsTraversal(){
@@ -97,18 +106,17 @@ public class Graph {
     }
 
     public List<Object> getLongestPath(Object originKey, Object destinationKey){ // chama o algoritmo de djikstra com o parametro especifio
-        return this.getShortLongPath(this.getNode(originKey), this.getNode(destinationKey), false);
+        return this.getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), false);
     }
 
     public List<Object> getShortestPath(Object originKey, Object destinationKey){
-        return this.getShortLongPath(this.getNode(originKey), this.getNode(destinationKey), true);
+        return this.getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), true);
     }
 
-    private List<Object> getShortLongPath(Node<?> origin, Node<?> destination, boolean shortest){
-        if(!this.search(origin.toString(), destination.toString())){ // caso nao exista conexao entre a origem e destino, retorna vazio
+    private List<Object> getShortOrLongPath(Node<?> origin, Node<?> destination, boolean shortest){
+        if(!this.bfsSearch(origin.toString(), destination.toString())){ // caso nao exista conexao entre a origem e destino, retorna vazio
             return new ArrayList<>();
         }
-
         // instancializa todas as variaveis:
         // distancias, visitados, nodes pra visitar, node anterior
         Map<String, Double> distances = new HashMap<>();
@@ -166,7 +174,7 @@ public class Graph {
         return nodesToVisit.remove(lowestNodeIndex);
     }
 
-    public boolean search(Object originKey, Object destinationKey){ // itera sobre o grafo inteiro ate encontrar o destino ou nao ter mais elementos
+    public boolean bfsSearch(Object originKey, Object destinationKey){ // itera sobre o grafo inteiro ate encontrar o destino ou nao ter mais elementos
         BfsIterator bfs = new BfsIterator(this.getNode(originKey));
         while(bfs.ready()){
             if(bfs.next().toString().equals(destinationKey.toString())){
@@ -175,7 +183,7 @@ public class Graph {
         }
         return false;
     }
-    protected boolean dfsSearch(Object originKey, Object destinationKey){ // itera sobre o grafo inteiro ate encontrar o destino ou nao ter mais elementos
+    public boolean dfsSearch(Object originKey, Object destinationKey){ // itera sobre o grafo inteiro ate encontrar o destino ou nao ter mais elementos
         DfsIterator dfs = new DfsIterator(this.getNode(originKey));
         while(dfs.ready()){
             if(dfs.next().toString().equals(destinationKey.toString())){
@@ -185,15 +193,16 @@ public class Graph {
         return false;
     }
 
-    public List<?> adjacentNodesAtDistance(Object origin, int distance){
-        return this.adjacentNodesAtDistance(this.getNode(origin.toString()), distance);
+    public List<?> getNodesAtDistance(Object origin, int distance){
+        return this.getNodesAtDistance(this.getNode(origin.toString()), distance);
     }
-    public List<?> adjacentNodesAtDistance(Node<?> origin, int distance){
+    public List<?> getNodesAtDistance(Node<?> origin, int distance){
         BfsIterator bfs = new BfsIterator(origin);
         List<Node<?>> nodes = new ArrayList<>();
         while(bfs.ready() && !(bfs.nextIterationLayer() == distance)){ // itera sobre o grafo ate a camada dele for igual a distancia
             bfs.next();
         }
+        nodes.add(bfs.next());
         while (bfs.ready() && bfs.nextIterationLayer() == distance){ // enquanto a distancia for igual a distancia
             nodes.add(bfs.next()); // adiciona na lista de nodes que tao na camada
         }
@@ -202,9 +211,21 @@ public class Graph {
 
     // KRUSKAL ALGORITHM
     private record Edge(Node<?> node1, Node<?> node2, int weight) implements Comparable<Edge> {
-        public boolean equals(Edge edge) {
-            return (edge.node1 == this.node1 || edge.node1 == this.node2) && (edge.node2 == this.node1 || edge.node2 == this.node2);
-        }@Override
+        @Override
+        public boolean equals(Object obj) {
+            if(obj.getClass() == this.getClass()){
+                return obj.toString().equals(this.toString()) || obj.toString().equals(node2.toString() + node1.toString() + weight);
+            }
+            return false;
+        }
+        @Override
+        public String toString() {
+            if(node1.toString().compareTo(node2().toString()) < 0){
+                return node1.toString() + node2.toString() + weight;
+            }
+            return node2.toString() + node1.toString() + weight;
+        }
+        @Override
         public int compareTo(Edge edge) {
             return this.weight - edge.weight;
         }
@@ -214,46 +235,34 @@ public class Graph {
     }
     public static Graph genMinimumSpanningTree(Graph graph){
         Node<?>[] nodes = graph.getNodes();
-        ArrayList<Edge> edges = new ArrayList<>();
+        HashSet<Edge> edgesSet = new HashSet<>();
         // pega todas as conexoes eliminando repeticoes, se o grafo tiver nodes
         // adicionado de forma direcionada, nao vai funciona
+        System.out.println(graph.edgesCount());
         for(Node<?> node : nodes){
             for(AdjacencyHolder adjacentNode : node.getAdjacencyHolders()){
                 Edge e = new Edge(node, adjacentNode.getNode(), adjacentNode.getWeight());
-                if(!alreadyAdded(edges, e)){
-                    edges.add(e);
-                }
+                System.out.println(edgesSet.add(e));
             }
         }
         // ordena o arraylist baseado no peso das arestas
-        Collections.sort(edges);
-        HashSet<Node<?>> addedNodes = new HashSet<>();
-        Graph minTree = new Graph();
+        Edge[] edges = edgesSet.toArray(new Edge[0]);
+        Arrays.sort(edges);
+        Graph minTree = new Graph(graph.directed);
         for(Edge e : edges){
-            if(addedNodes.size() >= nodes.length){
-                break;
-            }
-            Node<?> originNode = new Node<>(e.node1.getLabel());
-            Node<?> destinationNode = new Node<>(e.node2.getLabel());
+            Node<?> originNode = new Node<>(e.node1.getValue());
+            Node<?> destinationNode = new Node<>(e.node2.getValue());
             minTree.add(originNode);
             minTree.add(destinationNode);
             // SE ja tiver uma conexao entre o node de origem e o de destino, pula pra prox iteracao
-            if(minTree.search(originNode, destinationNode)){ // o search faz bfs na arvore e retorna verdadeiro qnd encontra o destino
-                continue;
+            if(!minTree.bfsSearch(originNode, destinationNode)){ // o search faz bfs na arvore e retorna verdadeiro qnd encontra o destino
+                minTree.newAdjacency(originNode, destinationNode, e.weight());
             }
-            addedNodes.add(originNode);
-            addedNodes.add(destinationNode);
-            minTree.newNonDirectedAdjacency(originNode, destinationNode, e.weight());
+            if(minTree.size() == nodes.length && minTree.size() == minTree.edgesCount()){
+                break;
+            }
         }
         return minTree;
-    }
-    private static boolean alreadyAdded(ArrayList<Edge> edges, Edge edge){
-        for(Edge e : edges){
-            if(e.equals(edge)){
-                return true;
-            }
-        }
-        return false;
     }
 
     public ArrayList<Graph> getComponents(){
@@ -270,7 +279,7 @@ public class Graph {
     }
 
     private Graph getComponent(Node<?> origin){
-        Graph component = new Graph();
+        Graph component = new Graph(this.directed);
         BfsIterator bfs = new BfsIterator(origin);
         component.add(origin);
         while (bfs.ready()){
@@ -314,8 +323,12 @@ public class Graph {
     }
     public boolean isMaximalClique(Node<?>[] nodes){
         if(isClique(nodes)){
+            HashSet<Node<?>> checkedNodes = new HashSet<>(Arrays.asList(nodes));
             for(Node<?> n : nodes){
-                for(Node<?> adj : n.getAdjacencies()){
+                ArrayList<Node<?>> adjs = new ArrayList<>(Arrays.asList(n.getAdjacencies()));
+                adjs.removeAll(checkedNodes);
+                for(Node<?> adj : adjs){
+                    checkedNodes.add(adj);
                     Node<?>[] maxCliqueCheck = Arrays.copyOf(nodes, nodes.length+1);
                     maxCliqueCheck[nodes.length] = adj;
                     if(isClique(maxCliqueCheck)){
@@ -333,96 +346,32 @@ public class Graph {
         return Arrays.toString(this.nodes.values().toArray());
     }
 
-    private static void createGraph(Graph graph, Object[] keys){ // codigo so pra debuga ali em baixo
-        for(Object key : keys) {
-            graph.add(new Node<>(key));
-        }
-    }
-
-    public static Graph createDebugGraph(boolean directed){
-        Graph graph = new Graph();
-
-        int distance = 2;
+    public static Graph createExampleGraph(boolean directed){
+        Graph graph = new Graph(directed);
 
         Object[] keys;
-        Object iteratorStart, searchOrigin, searchEnd, pathStart, pathEnd;
-        if(directed){
-            keys = new String[]{"s", "a", "b", "c", "d", "e"};
+        keys = new Object[]{1, 2, 3, 4, 5, 6, 7, 8};
 
-            createGraph(graph, keys);
-            iteratorStart = "s";
-            searchOrigin = "s";
-            searchEnd = "e";
-            pathStart = "s";
-            pathEnd = "e";
-
-            //https://www.gatevidyalay.com/wp-content/uploads/2018/03/Dijkstra-Algorithm-Problem-01.png
-            graph.newAdjacency("s", "a", 1);
-            graph.newAdjacency("s", "b", 5);
-            graph.newAdjacency("a", "b", 2);
-            graph.newAdjacency("a", "c", 2);
-            graph.newAdjacency("a", "d", 1);
-            graph.newAdjacency("b", "d", 2);
-            graph.newAdjacency("c", "d", 3);
-            graph.newAdjacency("c", "e", 1);
-            graph.newAdjacency("d", "e", 2);
-        }else{
-            keys = new Object[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-
-            createGraph(graph, keys);
-            iteratorStart = 0;
-            searchOrigin = 0;
-            searchEnd = 4;
-            pathStart = 0;
-            pathEnd = 4;
-
-            // https://www.geeksforgeeks.org/wp-content/uploads/Fig-11.jpg
-            graph.newNonDirectedAdjacency(0, 1, 4);
-            graph.newNonDirectedAdjacency(0, 7, 8);
-            graph.newNonDirectedAdjacency(1, 7, 11);
-            graph.newNonDirectedAdjacency(1, 2, 8);
-            graph.newNonDirectedAdjacency(2, 8, 2);
-            graph.newNonDirectedAdjacency(2, 3, 7);
-            graph.newNonDirectedAdjacency(2, 5, 4);
-            graph.newNonDirectedAdjacency(8, 7, 7);
-            graph.newNonDirectedAdjacency(7, 6, 1);
-            graph.newNonDirectedAdjacency(8, 6, 6);
-            graph.newNonDirectedAdjacency(6, 5, 2);
-            graph.newNonDirectedAdjacency(5, 3, 14);
-            graph.newNonDirectedAdjacency(5, 4, 10);
-            graph.newNonDirectedAdjacency(3, 4, 9);
-
-            // to check if its finding components correctly
-            graph.newNonDirectedAdjacency(9, 10, 10);
-            graph.newNonDirectedAdjacency(10, 11, 10);
-            graph.newNonDirectedAdjacency(9, 11, 10);
-            graph.newNonDirectedAdjacency(11, 12, 10);
-            graph.newNonDirectedAdjacency(12, 10, 10);
-            graph.newNonDirectedAdjacency(12, 9, 10);
+        for(Object key : keys) {
+            graph.add(key);
         }
 
-        graph.printAdjacencies();
+        //https://media.geeksforgeeks.org/wp-content/uploads/graphhh.png
+        graph.newAdjacency(0, 1, 4);
+        graph.newAdjacency(0, 7, 8);
+        graph.newAdjacency(1, 2, 8);
+        graph.newAdjacency(1, 7, 11);
+        graph.newAdjacency(2, 8, 2);
+        graph.newAdjacency(2, 3, 7);
+        graph.newAdjacency(2, 5, 4);
+        graph.newAdjacency(3, 4, 9);
+        graph.newAdjacency(3, 5, 14);
+        graph.newAdjacency(4, 5, 10);
+        graph.newAdjacency(5, 6, 2);
+        graph.newAdjacency(6, 7, 1);
+        graph.newAdjacency(6, 8, 6);
+        graph.newAdjacency(7, 8, 7);
 
-        BfsIterator bfsIterator = new BfsIterator(graph.getNode(iteratorStart));
-        DfsIterator dfsIterator = new DfsIterator(graph.getNode(iteratorStart));
-
-        System.out.print("BFS: ");
-        while(bfsIterator.ready()){
-            System.out.print(bfsIterator.next() + " ");
-        }
-        System.out.println();
-        System.out.print("DFS: ");
-        while(dfsIterator.ready()){
-            System.out.print(dfsIterator.next() + " ");
-        }
-        System.out.println();
-
-        System.out.println(graph.search(searchOrigin, searchEnd));
-
-        System.out.println("ShortestPath: " + graph.getShortestPath(pathStart, pathEnd));
-        System.out.println("LongestPath: " + graph.getLongestPath(pathStart, pathEnd).get(0));
-
-        System.out.println("Nodes at distance 3 from node '" + pathStart + "': " + graph.adjacentNodesAtDistance(pathStart, distance));
         return graph;
     }
 }

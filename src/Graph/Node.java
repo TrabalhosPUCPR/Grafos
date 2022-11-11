@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 
 public class Node<T> {
     protected static class AdjacencyHolder {
-        Node<?> node;
+        final Node<?> node;
         Integer weight;
 
         public AdjacencyHolder(Node<?> node, Integer weight) {
@@ -20,46 +20,42 @@ public class Node<T> {
             return weight;
         }
 
-        public void setNode(Node<?> node) {
-            this.node = node;
-        }
-
         public void setWeight(Integer weight) {
             this.weight = weight;
         }
     }
 
-    private T label;
-    private final LinkedHashMap<Object, AdjacencyHolder> adjacencies;
+    private T value;
+    private final LinkedHashMap<String, AdjacencyHolder> adjacencies;
 
-    public Node(T label) {
-        this.label = label;
+    public Node(T value) {
+        this.value = value;
         this.adjacencies = new LinkedHashMap<>();
     }
 
-    public void setLabel(T label){
-        this.label = label;
+    public void setValue(T value){
+        this.value = value;
     }
 
-    public T getLabel() {
-        return label;
+    public T getValue() {
+        return value;
     }
 
-    public Integer getWeight(Object adjacentNode) {
+    protected Integer getWeight(Object adjacentNode) {
         // pega o peso de uma conexao
         return adjacencies.get(adjacentNode.toString()).getWeight();
     }
 
     @Override
     public String toString() {
-        return this.label.toString();
+        return this.value.toString();
     }
 
     protected boolean newAdjacency(Node<?> node, int weight){ // adiciona no hashmap de adjacencias
         // a chave e o rotulo, e cria um adjacencyholder pra guarda o peso e o valor
-        return this.adjacencies.put(node.toString(), new AdjacencyHolder(node, weight)) != null;
+        return this.adjacencies.put(node.toString(), new AdjacencyHolder(node, weight)) == null;
     }
-    public Node<?> getAdjacency(String key){ // retorna a adjacencia se a chave existir
+    protected Node<?> getAdjacency(String key){ // retorna a adjacencia se a chave existir
         AdjacencyHolder adjacent = this.adjacencies.get(key);
         if(adjacent != null){
             return adjacent.getNode();
@@ -67,7 +63,7 @@ public class Node<T> {
         return null;
     }
 
-    public Node<?>[] getAdjacencies() { // retorna um array com os nodes adjacentes, tudo isso pra pega do hashmap
+    protected Node<?>[] getAdjacencies() { // retorna um array com os nodes adjacentes, tudo isso pra pega do hashmap
         AdjacencyHolder[] adjacencyHolders = new AdjacencyHolder[0];
         adjacencyHolders = this.adjacencies.values().toArray(adjacencyHolders);
         Node<?>[] nodesList = new Node<?>[adjacencyHolders.length];
@@ -77,20 +73,24 @@ public class Node<T> {
         return nodesList;
     }
 
-    public AdjacencyHolder[] getAdjacencyHolders(){ // retorna o objeto q segura o node e o peso
+    protected AdjacencyHolder[] getAdjacencyHolders(){ // retorna o objeto q segura o node e o peso
         AdjacencyHolder[] adjacencyHolders = new AdjacencyHolder[0];
         return this.adjacencies.values().toArray(adjacencyHolders);
     }
 
-    public AdjacencyHolder getAdjacencyHolder(String key){
-        return this.adjacencies.get(key);
+    protected AdjacencyHolder getAdjacencyHolder(Object key){
+        return this.adjacencies.get(key.toString());
     }
 
-    public void setWeight(Object adjacentNode, int weights){
+    protected boolean removeAdjacency(Object key){
+        return this.adjacencies.remove(key.toString()) != null;
+    }
+
+    protected void setWeight(Object adjacentNode, int weights){
         this.adjacencies.get(adjacentNode.toString()).setWeight(weights);
     }
 
-    public int sumWeights(){ // soma todos os pesos das adjacencias
+    protected int sumWeights(){ // soma todos os pesos das adjacencias
         int sum = 0;
         for(AdjacencyHolder adH : this.getAdjacencyHolders()){
             sum += adH.weight;
