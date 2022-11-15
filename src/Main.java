@@ -3,10 +3,7 @@ import Graph.GraphMenu;
 
 public class Main {
     public static void main(String[] args) {
-        Graph graph = Graph.createExampleGraph(false);
-        GraphMenu menu = new GraphMenu(graph);
-        menu.run();
-        menu = new GraphMenu();
+        GraphMenu menu = new GraphMenu();
         menu.run();
     }
 }

@@ -17,6 +17,13 @@ public class Graph {
         this.nodes = new LinkedHashMap<>();
         this.directed = directed;
     }
+    public Graph(Graph graph){
+        this.nodes = new LinkedHashMap<>();
+        for(Node<?> node : graph.getNodes()){
+            this.nodes.put(node.toString(), new Node<>(node));
+        }
+        this.directed = false;
+    }
 
     public int size(){return this.nodes.size();}
     public int edgesCount(){
@@ -341,6 +348,74 @@ public class Graph {
             return true;
         }
         return false;
+    }
+
+    public boolean isConnected(){
+        Queue<Node<?>> queue = new LinkedList<>(getNodesList());
+        while (!queue.isEmpty()){
+            Node<?> node = queue.poll();
+            for(Node<?> n : queue){
+                if(node.getAdjacency(n.toString()) == null){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public boolean isEulerian(){
+        List<Node<?>> oddNodes = new ArrayList<>(2);
+        for(Node<?> node : getNodes()){
+            if(node.getAdjacencies().length % 2 == 1){
+                oddNodes.add(node);
+            }
+            if(oddNodes.size() > 2){
+                return false;
+            }
+        }
+        return oddNodes.size() == 0 || oddNodes.size() == 2;
+    }
+
+    public boolean isCyclic(){
+        if(directed){
+            Graph graph = new Graph(this); // faz uma copia pois a gente vai ficar testando se possui folhas
+            Queue<Node<?>> queue = new LinkedList<>(graph.getNodesList());
+            // procura todos os nodes folhas
+            List<Node<?>> leafs = graph.getAllLeafs();
+            while (leafs.size() > 0){
+                queue.addAll(graph.getAllLeafs());
+                while (!queue.isEmpty()){
+                    graph.remove(queue.poll());
+                }
+                if(graph.size() == 0){
+                    return false;
+                }
+                leafs = graph.getAllLeafs();
+            }
+            return true;
+        }else {
+            HashSet<Node<?>> set = new HashSet<>();
+            DfsIterator dfs = new DfsIterator(getNodes()[0]);
+            while (dfs.ready()){
+                Node<?> node = dfs.next();
+                if(set.contains(node)){
+                    return true;
+                }else {
+                    set.add(node);
+                }
+            }
+        }
+        return false;
+    }
+
+    private List<Node<?>> getAllLeafs(){
+        LinkedList<Node<?>> list = new LinkedList<>();
+        for(Node<?> node : getNodes()){ // procura todos os nodes folhas
+            if(node.getAdjacencies().length == 0){
+                list.add(node);
+            }
+        }
+        return list;
     }
 
     @Override

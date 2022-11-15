@@ -32,6 +32,10 @@ public class Node<T> {
         this.value = value;
         this.adjacencies = new LinkedHashMap<>();
     }
+    public Node(Node<T> value){
+        this.value = value.value;
+        this.adjacencies = value.adjacencies;
+    }
 
     public void setValue(T value){
         this.value = value;
