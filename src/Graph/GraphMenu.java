@@ -17,20 +17,52 @@ public class GraphMenu {
 
     public void run(){
         while (true){
-            switch (printOptions("Editar grafo", "Busca", "Gerenciar Sub Grafos", "Print", "Salvar", "Sair")){
+            switch (printOptions("Editar grafo", "Busca", "Verificacoes", "Gerenciar Sub Grafos", "Print", "Salvar", "Sair")){
                 case 1 -> editMenu();
                 case 2 -> searchMenu();
-                case 3 -> subGraphMenu();
-                case 4 -> printMenu();
-                case 5 -> saveGraph();
-                case 6 -> {
+                case 3 -> checksMenu();
+                case 4 -> subGraphMenu();
+                case 5 -> printMenu();
+                case 6 -> saveGraphMenu();
+                case 7 -> {
                     return;
                 }
             }
         }
     }
 
-    private void saveGraph(){
+    private void checksMenu(){
+        System.out.println("Digite uma opcao para verificar se e real:");
+        while (true){
+            switch (printOptions("Conexo", "Euleriano", "Ciclico", "Sair")){
+                case 1 -> {
+                    if(graph.isConnected()){
+                        System.out.println("O Grafo é conexo!");
+                    }else {
+                        System.out.println("O Grafo não é conexo!");
+                    }
+                }
+                case 2 -> {
+                    if(graph.isEulerian()){
+                        System.out.println("O Grafo é euleriano!");
+                    }else {
+                        System.out.println("O Grafo não é euleriano!");
+                    }
+                }
+                case 3 -> {
+                    if(graph.isCyclic()){
+                        System.out.println("O Grafo é ciclico!");
+                    }else {
+                        System.out.println("O Grafo não é ciclico!");
+                    }
+                }
+                case 4 -> {
+                    return;
+                }
+            }
+        }
+    }
+    private void saveGraphMenu(){
         System.out.println("Digite o local para salvar o arquivo (vazio para usar o local padrao)");
         String location = getInputString();
         String name = null;
@@ -47,7 +79,10 @@ public class GraphMenu {
 
     private void printMenu(){
         while (true) {
-            switch (printOptions("Print vertices", "Print arestas", "Print travessia", "Print nodes a distancia X", "Print caminho mais curto", "Print caminho mais longo", "Voltar")) {
+            switch (printOptions(
+                    "Print vertices", "Print arestas", "Print travessia",
+                    "Print nodes a distancia X", "Print caminho mais curto", "Print caminho mais longo",
+                    "Voltar")) {
                 case 1 -> System.out.println(Arrays.toString(graph.getNodes()));
                 case 2 -> {
                     for (Node<?> n : graph.getNodes()) {
@@ -160,14 +195,18 @@ public class GraphMenu {
                 }
                 case 2 -> {
                     ArrayList<Graph> components = graph.getComponents();
-                    for (Graph g : components) {
-                        System.out.println("Componente do grafo principal encontrado, o menu de opcoes para ele ira aparecer agora...");
-                        continueMenu();
-                        GraphMenu menu = new GraphMenu(g);
-                        menu.run();
-                        System.out.println("Voce saiu do menu do componente criado...");
+                    if(components == null){
+                        System.out.println("O grafo é conexo, portanto, nâo possui mais componentes!");
+                    }else{
+                        for (Graph g : components) {
+                            System.out.println("Componente do grafo principal encontrado, o menu de opcoes para ele ira aparecer agora...");
+                            continueMenu();
+                            GraphMenu menu = new GraphMenu(g);
+                            menu.run();
+                            System.out.println("Voce saiu do menu do componente criado...");
+                        }
+                        System.out.println("Voce saiu do menu de todos os componentes, voltando para o grafo original...");
                     }
-                    System.out.println("Voce saiu do menu de todos os componentes, voltando para o grafo original...");
                 }
                 case 3 -> {
                     System.out.println("Digite as vertices que estao dentro do clique:");

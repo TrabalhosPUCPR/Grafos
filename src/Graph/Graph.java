@@ -274,6 +274,11 @@ public class Graph {
         return minTree;
     }
 
+    /**
+     * Gets all components inside this graph or null if its connected, to check if its connected or not, use
+     * isConnected() instead
+     * @return an arrayList on the components found as subGraphs or null if graph is connected
+     */
     public ArrayList<Graph> getComponents(){
         ArrayList<Graph> components = new ArrayList<>();
         LinkedList<Node<?>> nodesList = new LinkedList<>(this.getNodesList());
@@ -284,7 +289,10 @@ public class Graph {
                 nodesList.remove(node);
             }
         }
-        return components;
+        if(components.size() == 1){
+            return components;
+        }
+        return null;
     }
 
     private Graph getComponent(Node<?> origin){
@@ -416,6 +424,16 @@ public class Graph {
             }
         }
         return list;
+    }
+
+    public int getNodeBetwenessCentrality(Node<?> node){
+        // TODO: 11/15/2022 (not yet implemented)
+        return -1;
+    }
+
+    public int getNodeClosenessCentrality(Node<?> node){
+        // TODO: 11/15/2022 (not yet implemented)
+        return -1;
     }
 
     @Override
