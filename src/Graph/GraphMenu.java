@@ -1,8 +1,7 @@
 package Graph;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.io.IOException;
+import java.util.*;
 
 public class GraphMenu {
     private final Graph graph;
@@ -11,8 +10,54 @@ public class GraphMenu {
         this.graph = graph;
     }
     public GraphMenu(){
-        System.out.println("Digite o local do arquivo para carregar:");
-        this.graph = Graph.loadFromFile(getInputString());
+        if (printOptions("Carregar grafo em um arquivo", "Gerar grafo aleatorio") == 1) {
+            System.out.println("Digite o local do arquivo para carregar:");
+            String input = getInputString();
+            System.out.println("Carregando arquivo:");
+            this.graph = Graph.loadFromFile(input);
+        } else {
+            System.out.println("O grafo vai ser direcionado(1) ou nao direcionado(0)?");
+            if (getInputInt() == 1) {
+                graph = new Graph(true);
+            } else {
+                graph = new Graph();
+            }
+            System.out.println("Digite a quantidade de nodes para adicionar:");
+            int qntdV = getInputInt();
+            for (int i = 0; i < qntdV; i++) {
+                graph.add(i);
+            }
+            System.out.println("O grafo sera conexo?(0 - nao)(1 - sim)");
+            Random rand = new Random();
+            if(getInputInt() == 1){
+                if(!graph.isDirected()){
+                    Queue<Node<?>> queue = new LinkedList<>(graph.getNodesList());
+                    while (!queue.isEmpty()){
+                        Node<?> node = queue.poll();
+                        for(Node<?> n : queue){
+                            graph.newAdjacency(node, n, rand.nextInt(0, 100));
+                        }
+                    }
+                }else {
+                    for(Node<?> n : graph.getNodes()){
+                        for(Node<?> nodeToAdd : graph.getNodes()){
+                            graph.newAdjacency(n, nodeToAdd, rand.nextInt(1, 100));
+                        }
+                    }
+                }
+
+            }else{
+                System.out.println("Digite a quantidade de arestas para adicionar:");
+                int qntdA = getInputInt();
+                for (int i = 0; i < qntdA; i++) {
+                    int n1 = rand.nextInt(qntdV);
+                    int n2 = rand.nextInt(qntdV);
+                    if(!graph.newAdjacency(n1, n2, rand.nextInt(1, 100))){
+                        i--; // repete caso nao foi possivel adicionar adjacencia
+                    }
+                }
+            }
+        }
     }
 
     public void run(){
@@ -70,10 +115,25 @@ public class GraphMenu {
             System.out.println("Digite o nome do arquivo:");
             name = getInputString();
         }
-        if(graph.saveToFile(location, name)){
-            System.out.println("Salvo com sucesso!");
-        }else{
-            System.out.println("Nao foi possivel salvar");
+        try {
+            if(graph.saveToFile(location, name, false)){
+                System.out.println("Salvo com sucesso!");
+            }else{
+                System.out.println("Nao foi possivel salvar");
+            }
+        }catch (IOException e){
+            System.out.println("Arquivo ja existe! Gostaria de substituilo? (0 - nao; 1 - sim)");
+            if(getInputInt() == 1){
+                try {
+                    if(graph.saveToFile(location, name, true)){
+                        System.out.println("Salvo com sucesso!");
+                    }else{
+                        System.out.println("Nao foi possivel salvar");
+                    }
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
         }
     }
 
@@ -83,8 +143,13 @@ public class GraphMenu {
                     "Print vertices", "Print arestas", "Print travessia",
                     "Print nodes a distancia X", "Print caminho mais curto", "Print caminho mais longo",
                     "Voltar")) {
-                case 1 -> System.out.println(Arrays.toString(graph.getNodes()));
+                case 1 -> {
+                    System.out.println("O grafo tem " + graph.size() + " vertices!");
+                    System.out.println(Arrays.toString(graph.getNodes()));
+                }
                 case 2 -> {
+                    System.out.println("O grafo tem " + graph.edgesCount() + " arestas!");
+                    System.out.println("O grafo é " + (graph.isDirected() ? "direcionado!" : "nao direcionado!"));
                     for (Node<?> n : graph.getNodes()) {
                         System.out.print(n.toString() + " -> ");
                         for (Node.AdjacencyHolder adj : n.getAdjacencyHolders()) {

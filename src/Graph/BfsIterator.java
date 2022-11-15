@@ -44,7 +44,7 @@ public class BfsIterator extends SearchIterator{
     public void addToList(Node<?> currentNextNode) {
         Node<?>[] adjacents = currentNextNode.getAdjacencies();
         for(Node<?> n : adjacents){
-            if(!visited.contains(n) && !nodesToVisit.contains(n)){
+            if(!visited.contains(n) && !nodesToVisit.contains(n) || !checkIfVisited){
                 nodesToVisit.add(n);
                 this.nextLayerSize++;
             }

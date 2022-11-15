@@ -6,6 +6,7 @@ import java.util.Set;
 
 public abstract class SearchIterator {
 
+    boolean checkIfVisited = true;
     LinkedList<Node<?>> nodesToVisit = new LinkedList<>();
     Set<Node<?>> visited = new HashSet<>();
 
@@ -21,4 +22,7 @@ public abstract class SearchIterator {
         return !nodesToVisit.isEmpty();
     }
     abstract void addToList(Node<?> currentNextNode);
+    public void checkForRepeats(boolean check){
+        checkIfVisited = check;
+    }
 }

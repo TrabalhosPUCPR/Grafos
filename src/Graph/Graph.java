@@ -6,7 +6,7 @@ import Graph.Node.AdjacencyHolder;
 
 public class Graph {
     private final LinkedHashMap<String, Node<?>> nodes;
-    private final boolean directed;
+    private boolean directed;
     private final String defSaveLocation = "src/Graph/SavedGraphs";
 
     public Graph(){
@@ -31,7 +31,7 @@ public class Graph {
         for(Node<?> n : this.getNodes()){
             con += n.getAdjacencies().length;
         }
-        return con;
+        return directed ? con : con / 2; // divide por 2 caso for nao direcionado pois cada aresta vai aparecer 2 vezes
     }
     public boolean add(Object key){
         return add(new Node<>(key), false);
@@ -65,6 +65,9 @@ public class Graph {
         return this.nodes.get(key.toString());
     }
 
+    public boolean isDirected(){
+        return directed;
+    }
     public boolean newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
         if(!this.contains(node1.toString())){
             this.add(new Node<>(node1));
@@ -227,6 +230,12 @@ public class Graph {
             }
             return false;
         }
+
+        @Override
+        public int hashCode() {
+            return toString().hashCode();
+        }
+
         @Override
         public String toString() {
             if(node1.toString().compareTo(node2().toString()) < 0){
@@ -239,23 +248,26 @@ public class Graph {
             return this.weight - edge.weight;
         }
     }
+    private List<Edge> getAllEdges(){
+        Node<?>[] nodes = getNodes();
+        HashSet<Edge> edgesSet = new HashSet<>();
+        LinkedList<Edge> edges = new LinkedList<>();
+        for(Node<?> node : nodes){
+            for(AdjacencyHolder adjacentNode : node.getAdjacencyHolders()){
+                Edge e = new Edge(node, adjacentNode.getNode(), adjacentNode.getWeight());
+                if(edgesSet.add(e)){
+                    edges.add(e);
+                }
+            }
+        }
+        return edges;
+    }
     public Graph genMinimumSpanningTree(){
         return Graph.genMinimumSpanningTree(this);
     }
     public static Graph genMinimumSpanningTree(Graph graph){
-        Node<?>[] nodes = graph.getNodes();
-        HashSet<Edge> edgesSet = new HashSet<>();
-        // pega todas as conexoes eliminando repeticoes, se o grafo tiver nodes
-        // adicionado de forma direcionada, nao vai funciona
-        System.out.println(graph.edgesCount());
-        for(Node<?> node : nodes){
-            for(AdjacencyHolder adjacentNode : node.getAdjacencyHolders()){
-                Edge e = new Edge(node, adjacentNode.getNode(), adjacentNode.getWeight());
-                System.out.println(edgesSet.add(e));
-            }
-        }
         // ordena o arraylist baseado no peso das arestas
-        Edge[] edges = edgesSet.toArray(new Edge[0]);
+        Edge[] edges = graph.getAllEdges().toArray(new Edge[0]);
         Arrays.sort(edges);
         Graph minTree = new Graph(graph.directed);
         for(Edge e : edges){
@@ -267,7 +279,7 @@ public class Graph {
             if(!minTree.bfsSearch(originNode, destinationNode)){ // o search faz bfs na arvore e retorna verdadeiro qnd encontra o destino
                 minTree.newAdjacency(originNode, destinationNode, e.weight());
             }
-            if(minTree.size() == nodes.length && minTree.size() == minTree.edgesCount()){
+            if(minTree.size() == graph.size() && minTree.size() == minTree.edgesCount()){
                 break;
             }
         }
@@ -404,6 +416,7 @@ public class Graph {
         }else {
             HashSet<Node<?>> set = new HashSet<>();
             DfsIterator dfs = new DfsIterator(getNodes()[0]);
+            dfs.checkForRepeats(false);
             while (dfs.ready()){
                 Node<?> node = dfs.next();
                 if(set.contains(node)){
@@ -480,10 +493,10 @@ public class Graph {
         }
         return 0;
     }
-    public boolean saveToFile(){
-        return this.saveToFile(defSaveLocation, "Graph" + (getSavedGraphsAmount()+1) + ".txt");
+    public boolean saveToFile(boolean overwrite) throws IOException {
+        return this.saveToFile(defSaveLocation, "Graph" + (getSavedGraphsAmount()+1) + ".txt", overwrite);
     }
-    public boolean saveToFile(String location, String fileName){
+    public boolean saveToFile(String location, String fileName, boolean overwrite) throws IOException {
         if(fileName == null){
             fileName = "Graph" + getSavedGraphsAmount();
         }
@@ -492,29 +505,31 @@ public class Graph {
         }
         fileName += ".txt";
         File file = new File(location + "/" + fileName);
-        try {
-            if(!file.createNewFile()){
-                throw new IOException("File already exists!");
-            }
-            StringBuilder builder = new StringBuilder();
-            builder.append("*vertices ").append(this.size()).append("\n");
-            for(Node<?> node : this.getNodes()){
-                builder.append("\t\"").append(node).append("\"\n");
-            }
-            builder.append("*edges ").append(this.edgesCount()).append("\n");
-            for (Node<?> node : this.getNodes()){
-                for(AdjacencyHolder adj : node.getAdjacencyHolders()){
-                    builder.append("\t").append(adj.weight).append("\t ").append(node).append(" ").append(adj.node).append("\n");
-                }
-            }
-            FileWriter writer = new FileWriter(file);
-            writer.write(builder.toString());
-            writer.close();
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(!file.createNewFile() && !overwrite){
+            throw new IOException("File already exists!");
         }
-        return false;
+        StringBuilder builder = new StringBuilder();
+        System.out.println("Saving vertices:");
+        builder.append("*Vertices ").append(this.size()).append("\n");
+        Node<?>[] nodes = this.getNodes();
+        for(int i = 0; i < nodes.length; i++){
+            builder.append(i+1).append(" \"").append(nodes[i]).append("\"\n");
+            System.out.print((i+1) + "/" + nodes.length + "\r");
+        }
+        System.out.println("Complete");
+        System.out.println("Saving edges:");
+        int edgesN = this.edgesCount();
+        int counter = 0;
+        builder.append(directed ? "*Arcs " : "*Edges ").append(edgesN).append("\n");
+        for (Edge edge : this.getAllEdges()){
+            builder.append(edge.node1).append(" ").append(edge.node2).append(" ").append(edge.weight).append("\n");
+            System.out.print(++counter + "/" + edgesN + "\r");
+        }
+        System.out.println("Complete");
+        FileWriter writer = new FileWriter(file);
+        writer.write(builder.toString());
+        writer.close();
+        return true;
     }
     public static Graph loadFromFile(String location){
         Graph graph = new Graph();
@@ -526,20 +541,33 @@ public class Graph {
                 if(line.startsWith("*")){
                     String[] strings = line.split(" ");
                     String aa = strings[0].substring(1);
-                    mode = aa.equals("edges");
+                    if(aa.equals("Arcs")){
+                        mode = true;
+                        graph.directed = true;
+                    }else{
+                        mode = aa.equals("Edges");
+                    }
                 }
                 line = reader.readLine();
                 if(mode){
-                    while (line != null && line.startsWith("\t")){
+                    System.out.println("Loading edges/arcs:");
+                    int count = 0;
+                    while (line != null && !line.startsWith("*")){
                         String[] nodes = line.replaceAll("[\t\n]", "").split(" ");
-                        graph.newAdjacency(nodes[1], nodes[2], Integer.parseInt(nodes[0]));
+                        graph.newAdjacency(nodes[0], nodes[1], Integer.parseInt(nodes[2]));
                         line = reader.readLine();
+                        System.out.print(++count + " loaded\r");
                     }
+                    System.out.println("Complete");
                 }else {
-                    while (line != null && line.startsWith("\t")){
-                        graph.add(line.replaceAll("[\"\n\t]", ""));
+                    System.out.println("Loading vertices:");
+                    int count = 0;
+                    while (line != null && !line.startsWith("*")){
+                        graph.add(line.replaceAll("[\"\n\t]", "").split(" ")[1]);
                         line = reader.readLine();
+                        System.out.print(++count + " loaded\r");
                     }
+                    System.out.println("Complete");
                 }
             }
         } catch (IOException e) {
