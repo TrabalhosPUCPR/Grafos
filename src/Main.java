@@ -6,5 +6,7 @@ public class Main {
         Graph graph = Graph.createExampleGraph(false);
         GraphMenu menu = new GraphMenu(graph);
         menu.run();
+        menu = new GraphMenu();
+        menu.run();
     }
 }

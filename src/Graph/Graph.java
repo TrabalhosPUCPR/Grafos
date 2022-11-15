@@ -1,11 +1,13 @@
 package Graph;
 
+import java.io.*;
 import java.util.*;
 import Graph.Node.AdjacencyHolder;
 
 public class Graph {
     private final LinkedHashMap<String, Node<?>> nodes;
     private final boolean directed;
+    private final String defSaveLocation = "src/Graph/SavedGraphs";
 
     public Graph(){
         this.nodes = new LinkedHashMap<>();
@@ -372,6 +374,84 @@ public class Graph {
         graph.newAdjacency(6, 8, 6);
         graph.newAdjacency(7, 8, 7);
 
+        return graph;
+    }
+
+    private int getSavedGraphsAmount(){
+        File graphsFolder = new File(defSaveLocation);
+        if(graphsFolder.isDirectory()){
+            File[] files = graphsFolder.listFiles();
+            if (files != null) {
+                return files.length;
+            }
+        }
+        return 0;
+    }
+    public boolean saveToFile(){
+        return this.saveToFile(defSaveLocation, "Graph" + (getSavedGraphsAmount()+1) + ".txt");
+    }
+    public boolean saveToFile(String location, String fileName){
+        if(fileName == null){
+            fileName = "Graph" + getSavedGraphsAmount();
+        }
+        if(location.isEmpty()){
+            location = defSaveLocation;
+        }
+        fileName += ".txt";
+        File file = new File(location + "/" + fileName);
+        try {
+            if(!file.createNewFile()){
+                throw new IOException("File already exists!");
+            }
+            StringBuilder builder = new StringBuilder();
+            builder.append("*vertices ").append(this.size()).append("\n");
+            for(Node<?> node : this.getNodes()){
+                builder.append("\t\"").append(node).append("\"\n");
+            }
+            builder.append("*edges ").append(this.edgesCount()).append("\n");
+            for (Node<?> node : this.getNodes()){
+                for(AdjacencyHolder adj : node.getAdjacencyHolders()){
+                    builder.append("\t").append(adj.weight).append("\t ").append(node).append(" ").append(adj.node).append("\n");
+                }
+            }
+            FileWriter writer = new FileWriter(file);
+            writer.write(builder.toString());
+            writer.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public static Graph loadFromFile(String location){
+        Graph graph = new Graph();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(location));
+            boolean mode = false; // false = vertices, true = edges
+            String line = reader.readLine();
+            while (line != null){
+                if(line.startsWith("*")){
+                    String[] strings = line.split(" ");
+                    String aa = strings[0].substring(1);
+                    mode = aa.equals("edges");
+                }
+                line = reader.readLine();
+                if(mode){
+                    while (line != null && line.startsWith("\t")){
+                        String[] nodes = line.replaceAll("[\t\n]", "").split(" ");
+                        graph.newAdjacency(nodes[1], nodes[2], Integer.parseInt(nodes[0]));
+                        line = reader.readLine();
+                    }
+                }else {
+                    while (line != null && line.startsWith("\t")){
+                        graph.add(line.replaceAll("[\"\n\t]", ""));
+                        line = reader.readLine();
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return graph;
     }
 }

@@ -10,18 +10,38 @@ public class GraphMenu {
     public GraphMenu(Graph graph) {
         this.graph = graph;
     }
+    public GraphMenu(){
+        System.out.println("Digite o local do arquivo para carregar:");
+        this.graph = Graph.loadFromFile(getInputString());
+    }
 
     public void run(){
         while (true){
-            switch (printOptions("Editar grafo", "Busca", "Gerenciar Sub Grafos", "Print", "Sair")){
+            switch (printOptions("Editar grafo", "Busca", "Gerenciar Sub Grafos", "Print", "Salvar", "Sair")){
                 case 1 -> editMenu();
                 case 2 -> searchMenu();
                 case 3 -> subGraphMenu();
                 case 4 -> printMenu();
-                case 5 -> {
+                case 5 -> saveGraph();
+                case 6 -> {
                     return;
                 }
             }
+        }
+    }
+
+    private void saveGraph(){
+        System.out.println("Digite o local para salvar o arquivo (vazio para usar o local padrao)");
+        String location = getInputString();
+        String name = null;
+        if(!location.isEmpty()) {
+            System.out.println("Digite o nome do arquivo:");
+            name = getInputString();
+        }
+        if(graph.saveToFile(location, name)){
+            System.out.println("Salvo com sucesso!");
+        }else{
+            System.out.println("Nao foi possivel salvar");
         }
     }
 
