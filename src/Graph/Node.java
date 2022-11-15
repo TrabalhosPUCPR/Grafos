@@ -32,6 +32,10 @@ public class Node<T> {
         this.value = value;
         this.adjacencies = new LinkedHashMap<>();
     }
+    public Node(Node<T> value){
+        this.value = value.value;
+        this.adjacencies = value.adjacencies;
+    }
 
     public void setValue(T value){
         this.value = value;
@@ -52,6 +56,9 @@ public class Node<T> {
     }
 
     protected boolean newAdjacency(Node<?> node, int weight){ // adiciona no hashmap de adjacencias
+        if(this.equals(node)){ // cancela caso o node seja igual a ele mesmo
+            return false;
+        }
         // a chave e o rotulo, e cria um adjacencyholder pra guarda o peso e o valor
         return this.adjacencies.put(node.toString(), new AdjacencyHolder(node, weight)) == null;
     }

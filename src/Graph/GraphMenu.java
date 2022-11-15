@@ -1,8 +1,7 @@
 package Graph;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.io.IOException;
+import java.util.*;
 
 public class GraphMenu {
     private final Graph graph;
@@ -10,16 +9,129 @@ public class GraphMenu {
     public GraphMenu(Graph graph) {
         this.graph = graph;
     }
+    public GraphMenu(){
+        if (printOptions("Carregar grafo em um arquivo", "Gerar grafo aleatorio") == 1) {
+            System.out.println("Digite o local do arquivo para carregar:");
+            String input = getInputString();
+            System.out.println("Carregando arquivo:");
+            this.graph = Graph.loadFromFile(input);
+        } else {
+            System.out.println("O grafo vai ser direcionado(1) ou nao direcionado(0)?");
+            if (getInputInt() == 1) {
+                graph = new Graph(true);
+            } else {
+                graph = new Graph();
+            }
+            System.out.println("Digite a quantidade de nodes para adicionar:");
+            int qntdV = getInputInt();
+            for (int i = 0; i < qntdV; i++) {
+                graph.add(i);
+            }
+            System.out.println("O grafo sera conexo?(0 - nao)(1 - sim)");
+            Random rand = new Random();
+            if(getInputInt() == 1){
+                if(!graph.isDirected()){
+                    Queue<Node<?>> queue = new LinkedList<>(graph.getNodesList());
+                    while (!queue.isEmpty()){
+                        Node<?> node = queue.poll();
+                        for(Node<?> n : queue){
+                            graph.newAdjacency(node, n, rand.nextInt(0, 100));
+                        }
+                    }
+                }else {
+                    for(Node<?> n : graph.getNodes()){
+                        for(Node<?> nodeToAdd : graph.getNodes()){
+                            graph.newAdjacency(n, nodeToAdd, rand.nextInt(1, 100));
+                        }
+                    }
+                }
+
+            }else{
+                System.out.println("Digite a quantidade de arestas para adicionar:");
+                int qntdA = getInputInt();
+                for (int i = 0; i < qntdA; i++) {
+                    int n1 = rand.nextInt(qntdV);
+                    int n2 = rand.nextInt(qntdV);
+                    if(!graph.newAdjacency(n1, n2, rand.nextInt(1, 100))){
+                        i--; // repete caso nao foi possivel adicionar adjacencia
+                    }
+                }
+            }
+        }
+    }
 
     public void run(){
         while (true){
-            switch (printOptions("Editar grafo", "Busca", "Gerenciar Sub Grafos", "Print", "Sair")){
+            switch (printOptions("Editar grafo", "Busca", "Verificacoes", "Gerenciar Sub Grafos", "Print", "Salvar", "Sair")){
                 case 1 -> editMenu();
                 case 2 -> searchMenu();
-                case 3 -> subGraphMenu();
-                case 4 -> printMenu();
-                case 5 -> {
+                case 3 -> checksMenu();
+                case 4 -> subGraphMenu();
+                case 5 -> printMenu();
+                case 6 -> saveGraphMenu();
+                case 7 -> {
                     return;
+                }
+            }
+        }
+    }
+
+    private void checksMenu(){
+        System.out.println("Digite uma opcao para verificar se e real:");
+        while (true){
+            switch (printOptions("Conexo", "Euleriano", "Ciclico", "Sair")){
+                case 1 -> {
+                    if(graph.isConnected()){
+                        System.out.println("O Grafo é conexo!");
+                    }else {
+                        System.out.println("O Grafo não é conexo!");
+                    }
+                }
+                case 2 -> {
+                    if(graph.isEulerian()){
+                        System.out.println("O Grafo é euleriano!");
+                    }else {
+                        System.out.println("O Grafo não é euleriano!");
+                    }
+                }
+                case 3 -> {
+                    if(graph.isCyclic()){
+                        System.out.println("O Grafo é ciclico!");
+                    }else {
+                        System.out.println("O Grafo não é ciclico!");
+                    }
+                }
+                case 4 -> {
+                    return;
+                }
+            }
+        }
+    }
+    private void saveGraphMenu(){
+        System.out.println("Digite o local para salvar o arquivo (vazio para usar o local padrao)");
+        String location = getInputString();
+        String name = null;
+        if(!location.isEmpty()) {
+            System.out.println("Digite o nome do arquivo:");
+            name = getInputString();
+        }
+        try {
+            if(graph.saveToFile(location, name, false)){
+                System.out.println("Salvo com sucesso!");
+            }else{
+                System.out.println("Nao foi possivel salvar");
+            }
+        }catch (IOException e){
+            System.out.println("Arquivo ja existe! Gostaria de substituilo? (0 - nao; 1 - sim)");
+            if(getInputInt() == 1){
+                try {
+                    if(graph.saveToFile(location, name, true)){
+                        System.out.println("Salvo com sucesso!");
+                    }else{
+                        System.out.println("Nao foi possivel salvar");
+                    }
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
             }
         }
@@ -27,9 +139,17 @@ public class GraphMenu {
 
     private void printMenu(){
         while (true) {
-            switch (printOptions("Print vertices", "Print arestas", "Print travessia", "Print nodes a distancia X", "Print caminho mais curto", "Print caminho mais longo", "Voltar")) {
-                case 1 -> System.out.println(Arrays.toString(graph.getNodes()));
+            switch (printOptions(
+                    "Print vertices", "Print arestas", "Print travessia",
+                    "Print nodes a distancia X", "Print caminho mais curto", "Print caminho mais longo",
+                    "Voltar")) {
+                case 1 -> {
+                    System.out.println("O grafo tem " + graph.size() + " vertices!");
+                    System.out.println(Arrays.toString(graph.getNodes()));
+                }
                 case 2 -> {
+                    System.out.println("O grafo tem " + graph.edgesCount() + " arestas!");
+                    System.out.println("O grafo é " + (graph.isDirected() ? "direcionado!" : "nao direcionado!"));
                     for (Node<?> n : graph.getNodes()) {
                         System.out.print(n.toString() + " -> ");
                         for (Node.AdjacencyHolder adj : n.getAdjacencyHolders()) {
@@ -140,14 +260,18 @@ public class GraphMenu {
                 }
                 case 2 -> {
                     ArrayList<Graph> components = graph.getComponents();
-                    for (Graph g : components) {
-                        System.out.println("Componente do grafo principal encontrado, o menu de opcoes para ele ira aparecer agora...");
-                        continueMenu();
-                        GraphMenu menu = new GraphMenu(g);
-                        menu.run();
-                        System.out.println("Voce saiu do menu do componente criado...");
+                    if(components == null){
+                        System.out.println("O grafo é conexo, portanto, nâo possui mais componentes!");
+                    }else{
+                        for (Graph g : components) {
+                            System.out.println("Componente do grafo principal encontrado, o menu de opcoes para ele ira aparecer agora...");
+                            continueMenu();
+                            GraphMenu menu = new GraphMenu(g);
+                            menu.run();
+                            System.out.println("Voce saiu do menu do componente criado...");
+                        }
+                        System.out.println("Voce saiu do menu de todos os componentes, voltando para o grafo original...");
                     }
-                    System.out.println("Voce saiu do menu de todos os componentes, voltando para o grafo original...");
                 }
                 case 3 -> {
                     System.out.println("Digite as vertices que estao dentro do clique:");

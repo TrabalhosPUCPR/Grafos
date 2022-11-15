@@ -22,7 +22,7 @@ public class DfsIterator extends SearchIterator{
     void addToList(Node<?> currentNextNode) {
         Node<?>[] adjacencies = currentNextNode.getAdjacencies();
         for(Node<?> n : adjacencies){
-            if(!visited.contains(n)){
+            if(!visited.contains(n) || !checkIfVisited){
                 nodesToVisit.removeFirstOccurrence(n);
                 nodesToVisit.add(n);
             }
