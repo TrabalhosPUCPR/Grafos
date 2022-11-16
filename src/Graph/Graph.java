@@ -665,7 +665,7 @@ public class Graph {
         int counter = 0;
         builder.append(directed ? "*Arcs " : "*Edges ").append(edgesN).append("\n");
         for (Edge edge : this.getAllEdges()){
-            builder.append(edge.node1).append(" ").append(edge.node2).append(" ").append(edge.weight).append("\n");
+            builder.append("\"").append(edge.node1).append("\" \"").append(edge.node2).append("\" ").append(edge.weight).append("\n");
             System.out.print(++counter + "/" + edgesN + "\r");
         }
         System.out.println("Complete");
@@ -677,7 +677,7 @@ public class Graph {
 
     private static String encodeSerializable(Serializable object) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream( baos );
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
         oos.writeObject(object);
         oos.close();
         return Base64.getEncoder().encodeToString(baos.toByteArray());
@@ -712,8 +712,11 @@ public class Graph {
                     System.out.println("Loading edges/arcs:");
                     int count = 0;
                     while (line != null && !line.startsWith("*")){
-                        String[] nodes = line.replaceAll("[\t\n]", "").split(" ");
-                        graph.newAdjacency(graph.getNodes()[Integer.parseInt(nodes[0])-1], graph.getNodes()[Integer.parseInt(nodes[1])-1], Integer.parseInt(nodes[2]));
+                        String[] nodes = line.replaceAll("[\t\n]", "").split("(\")");
+                        if(nodes[2].equals("Jr.")){
+                            System.out.println("aaaa");
+                        }
+                        graph.newAdjacency(nodes[1].replace("\"", ""), nodes[2].replace("\"", ""), Integer.parseInt(nodes[4].substring(1)));
                         line = reader.readLine();
                         System.out.print(++count + " loaded\r");
                     }
@@ -722,8 +725,8 @@ public class Graph {
                     System.out.println("Loading vertices:");
                     int count = 0;
                     while (line != null && !line.startsWith("*")){
-                        String[] entries = line.replaceAll("[\"\n\t]", "").split(" ");
-                        graph.add(decodeString(entries[2]));
+                        String[] entries = line.replaceAll("[\n\t]", "").split("\"");
+                        graph.add(decodeString(entries[2].replace(" ", "")));
                         line = reader.readLine();
                         System.out.print(++count + " loaded\r");
                     }

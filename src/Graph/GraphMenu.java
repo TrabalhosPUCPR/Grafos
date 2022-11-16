@@ -149,11 +149,10 @@ public class GraphMenu {
                     "Print nodes a distancia X", "Print caminho mais curto", "Print caminho mais longo",
                     "Print centralidade de proximidade", "Print centralidade de intermediacao", "Voltar")) {
                 case 1 -> {
-                    System.out.println("O grafo tem " + graph.size() + " vertices!");
                     System.out.println(Arrays.toString(graph.getNodes()));
+                    System.out.println("O grafo tem " + graph.size() + " vertices!");
                 }
                 case 2 -> {
-                    System.out.println("O grafo tem " + graph.edgesCount() + " arestas!");
                     System.out.println("O grafo é " + (graph.isDirected() ? "direcionado!" : "nao direcionado!"));
                     for (Node<?> n : graph.getNodes()) {
                         System.out.print(n.toString() + " -> ");
@@ -162,6 +161,7 @@ public class GraphMenu {
                         }
                         System.out.println();
                     }
+                    System.out.println("O grafo tem " + graph.edgesCount() + " arestas!");
                 }
                 case 3 -> {
                     switch (printOptions("BFS", "DFS")) {
