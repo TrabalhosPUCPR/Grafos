@@ -1,8 +1,9 @@
 package Graph;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 
-public class Node<T> {
+class Node<T extends Serializable> {
     protected static class AdjacencyHolder {
         final Node<?> node;
         Integer weight;
@@ -59,11 +60,14 @@ public class Node<T> {
         if(this.equals(node)){ // cancela caso o node seja igual a ele mesmo
             return false;
         }
-        // a chave e o rotulo, e cria um adjacencyholder pra guarda o peso e o valor
-        return this.adjacencies.put(node.toString(), new AdjacencyHolder(node, weight)) == null;
+        if(this.adjacencies.get(node.toString()) == null){ // nao muda caso ja estiver adjacente
+            this.adjacencies.put(node.toString(), new AdjacencyHolder(node, weight));
+            return true;
+        }
+        return false;
     }
-    protected Node<?> getAdjacency(String key){ // retorna a adjacencia se a chave existir
-        AdjacencyHolder adjacent = this.adjacencies.get(key);
+    protected Node<?> getAdjacency(Object key){ // retorna a adjacencia se a chave existir
+        AdjacencyHolder adjacent = this.adjacencies.get(key.toString());
         if(adjacent != null){
             return adjacent.getNode();
         }

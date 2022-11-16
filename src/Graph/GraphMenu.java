@@ -5,7 +5,7 @@ import java.util.*;
 
 public class GraphMenu {
     private final Graph graph;
-
+    private String defSaveLocation = "src/Graph/SavedGraphs";
     public GraphMenu(Graph graph) {
         this.graph = graph;
     }
@@ -35,13 +35,13 @@ public class GraphMenu {
                     while (!queue.isEmpty()){
                         Node<?> node = queue.poll();
                         for(Node<?> n : queue){
-                            graph.newAdjacency(node, n, rand.nextInt(0, 100));
+                            graph.newAdjacency(node.getValue(), n, rand.nextInt(0, 100));
                         }
                     }
                 }else {
                     for(Node<?> n : graph.getNodes()){
                         for(Node<?> nodeToAdd : graph.getNodes()){
-                            graph.newAdjacency(n, nodeToAdd, rand.nextInt(1, 100));
+                            graph.newAdjacency(n.getValue(), nodeToAdd, rand.nextInt(1, 100));
                         }
                     }
                 }
@@ -58,6 +58,10 @@ public class GraphMenu {
                 }
             }
         }
+    }
+
+    public void setNewSaveLocation(String location){
+        this.defSaveLocation = location;
     }
 
     public void run(){
@@ -110,6 +114,7 @@ public class GraphMenu {
     private void saveGraphMenu(){
         System.out.println("Digite o local para salvar o arquivo (vazio para usar o local padrao)");
         String location = getInputString();
+        if(location.isEmpty()) location = defSaveLocation;
         String name = null;
         if(!location.isEmpty()) {
             System.out.println("Digite o nome do arquivo:");
@@ -160,8 +165,8 @@ public class GraphMenu {
                 }
                 case 3 -> {
                     switch (printOptions("BFS", "DFS")) {
-                        case 1 -> System.out.println(Arrays.toString(graph.getBfsTraversal()));
-                        case 2 -> System.out.println(Arrays.toString(graph.getDfsTraversal()));
+                        case 1 -> System.out.println(graph.getBfsTraversal());
+                        case 2 -> System.out.println(graph.getDfsTraversal());
                     }
                 }
                 case 4 -> {

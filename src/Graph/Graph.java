@@ -7,7 +7,6 @@ import Graph.Node.AdjacencyHolder;
 public class Graph {
     private final LinkedHashMap<String, Node<?>> nodes;
     private boolean directed;
-    private final String defSaveLocation = "src/Graph/SavedGraphs";
 
     public Graph(){
         this.nodes = new LinkedHashMap<>();
@@ -20,7 +19,7 @@ public class Graph {
     public Graph(Graph graph){
         this.nodes = new LinkedHashMap<>();
         for(Node<?> node : graph.getNodes()){
-            this.nodes.put(node.toString(), new Node<>(node));
+            this.nodes.put(node.toString(), new Node<>((Serializable) node));
         }
         this.directed = false;
     }
@@ -31,13 +30,15 @@ public class Graph {
         for(Node<?> n : this.getNodes()){
             con += n.getAdjacencies().length;
         }
-        return directed ? con : con / 2; // divide por 2 caso for nao direcionado pois cada aresta vai aparecer 2 vezes
+        return directed ? con : con / 2;
     }
     public boolean add(Object key){
-        return add(new Node<>(key), false);
+        isSerializable(key);
+        return add(new Node<>((Serializable)key), false);
     }
     public boolean add(Object key, boolean override){
-        return add(new Node<>(key), override);
+        isSerializable(key);
+        return add(new Node<>((Serializable)key), override);
     }
     private boolean add(Node<?> node, boolean override){
         if(override || !this.contains(node.toString())){
@@ -45,6 +46,13 @@ public class Graph {
             return true;
         }
         return false;
+    }
+
+    private void isSerializable(Object key) {
+        if(!(key instanceof Serializable)){
+            System.err.println("All objects in graph must implement the Serializable interface");
+            throw new RuntimeException();
+        }
     }
 
     public boolean remove(Object key){
@@ -56,13 +64,33 @@ public class Graph {
         }
         return false;
     }
+    public boolean setNewWeight(Object node1, Object node2, int newWeight){
+        if(getNodeClass(node1).getAdjacency(node2) == null){
+            return false;
+        }
+        getNodeClass(node1).getAdjacencyHolder(node2).setWeight(newWeight);
+        if(!directed){
+            getNodeClass(node2).getAdjacencyHolder(node1).setWeight(newWeight);
+        }
+        return true;
+    }
+    public int getWeight(Object node1, Object node2){
+        return getNodeClass(node1).getAdjacencyHolder(node2).getWeight();
+    }
 
     public boolean contains(Object nodeKey){
         return this.nodes.get(nodeKey.toString()) != null;
     }
 
-    public Node<?> getNode(Object key){
+    protected Node<?> getNodeClass(Object key){
         return this.nodes.get(key.toString());
+    }
+    public <T> T get(Object key){
+        try{
+            return (T) getNodeClass(key).getValue();
+        }catch (Exception e){
+            return null;
+        }
     }
 
     public boolean isDirected(){
@@ -70,36 +98,58 @@ public class Graph {
     }
     public boolean newAdjacency(Object node1, Object node2, int weight){ // pega o node1 dentro do grafo e chama a funcao que adiciona adjacencia
         if(!this.contains(node1.toString())){
-            this.add(new Node<>(node1));
+            this.add(node1);
         }
         if(!this.contains(node2.toString())){
-            this.add(new Node<>(node2));
+            this.add(node2);
         }
-        boolean added = getNode(node1).newAdjacency(getNode(node2), weight);
+        boolean added = getNodeClass(node1).newAdjacency(getNodeClass(node2), weight);
         if(this.directed || !added){
             return added;
         }
-        return getNode(node2).newAdjacency(getNode(node1), weight);
+        return getNodeClass(node2).newAdjacency(getNodeClass(node1), weight);
     }
 
     public boolean removeAdjacency(Object node1, Object node2){
-        boolean check = this.getNode(node1).removeAdjacency(node2);
+        boolean check = this.getNodeClass(node1).removeAdjacency(node2);
         if(directed){
             return check;
         }
-        return check && this.getNode(node2).removeAdjacency(node1);
+        return check && this.getNodeClass(node2).removeAdjacency(node1);
     }
 
-    public Node<?>[] getNodes() {
+    protected Node<?>[] getNodes() {
         Node<?>[] nodes = new Node<?>[0];
         nodes = this.nodes.values().toArray(nodes);
         return nodes;
     }
-    public List<Node<?>> getNodesList() {
+    protected List<Node<?>> getNodesList() {
         return new ArrayList<>(Arrays.asList(getNodes()));
     }
+    public List<?> toList(){
+        List<Serializable> list = new ArrayList<>();
+        for(Node<?> node : getNodes()){
+            list.add(node.getValue());
+        }
+        return list;
+    }
 
-    public Node<?>[] getBfsTraversal(){
+    private List<?> toValuesList(Node<?>[] array){
+        List<Serializable> list = new ArrayList<>();
+        for(Node<?> node : array){
+            list.add(node.getValue());
+        }
+        return list;
+    }
+    private List<?> toValuesList(List<Node<?>> list){
+        List<Serializable> l = new ArrayList<>();
+        for(Node<?> node : list){
+            l.add(node.getValue());
+        }
+        return l;
+    }
+
+    protected Node<?>[] getNodeBfsTraversal(){
         List<Node<?>> nodes = new ArrayList<>(this.nodes.size());
         BfsIterator bfsIterator = new BfsIterator(this.getNodes()[0]);
         while (bfsIterator.ready()){
@@ -107,8 +157,11 @@ public class Graph {
         }
         return nodes.toArray(new Node<?>[0]);
     }
+    public List<?> getBfsTraversal(){
+        return toValuesList(getNodeBfsTraversal());
+    }
 
-    public Node<?>[] getDfsTraversal(){
+    protected Node<?>[] getNodeDfsTraversal(){
         List<Node<?>> nodes = new ArrayList<>(this.nodes.size());
         DfsIterator dfsIterator = new DfsIterator(this.getNodes()[0]);
         while (dfsIterator.ready()){
@@ -116,19 +169,19 @@ public class Graph {
         }
         return nodes.toArray(new Node<?>[0]);
     }
+    public List<?> getDfsTraversal(){
+        return toValuesList(getNodeDfsTraversal());
+    }
 
     public List<Node<?>> getLongestPath(Object originKey, Object destinationKey){ // chama o algoritmo de djikstra com o parametro especifio
-        return this.getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), false);
+        return this.getShortOrLongPath(this.getNodeClass(originKey), this.getNodeClass(destinationKey), false);
     }
 
-    public List<Node<?>> getShortestPath(Object originKey, Object destinationKey){
-        return this.getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), true);
-    }
-    public int getShortestPathDistance(Object originKey, Object destinationKey){
-        return getPathWeight(getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), true).toArray(new Node[0]));
+    public List<?> getShortestPath(Object originKey, Object destinationKey){
+        return toValuesList(this.getShortOrLongPath(this.getNodeClass(originKey), this.getNodeClass(destinationKey), true));
     }
     public ArrayList<ArrayList<Node<?>>> getAllShortestPaths(Object originKey, Object destinationKey){
-        return getAllShortestPaths(getNode(originKey), getNode(destinationKey));
+        return getAllShortestPaths(getNodeClass(originKey), getNodeClass(destinationKey));
     }
 
     private ArrayList<ArrayList<Node<?>>> getAllShortestPaths(Node<?> origin, Node<?> destination){
@@ -245,10 +298,10 @@ public class Graph {
         return recreateShortestPath(origin, destination, previousNode);
     }
 
-    public int getPathWeight(Node<?>[] path){
+    public int getPathWeight(Object[] path){
         int weight = 0;
         for(int i = 0; i < path.length - 1; i++){
-            weight += path[i].getAdjacencyHolder(path[i+1]).getWeight();
+            weight += getNodeClass(path[i]).getAdjacencyHolder(path[i+1]).getWeight();
         }
         return weight;
     }
@@ -266,7 +319,7 @@ public class Graph {
     }
 
     public boolean bfsSearch(Object originKey, Object destinationKey){ // itera sobre o grafo inteiro ate encontrar o destino ou nao ter mais elementos
-        BfsIterator bfs = new BfsIterator(this.getNode(originKey));
+        BfsIterator bfs = new BfsIterator(this.getNodeClass(originKey));
         while(bfs.ready()){
             if(bfs.next().toString().equals(destinationKey.toString())){
                 return true;
@@ -275,7 +328,7 @@ public class Graph {
         return false;
     }
     public boolean dfsSearch(Object originKey, Object destinationKey){ // itera sobre o grafo inteiro ate encontrar o destino ou nao ter mais elementos
-        DfsIterator dfs = new DfsIterator(this.getNode(originKey));
+        DfsIterator dfs = new DfsIterator(this.getNodeClass(originKey));
         while(dfs.ready()){
             if(dfs.next().toString().equals(destinationKey.toString())){
                 return true;
@@ -285,17 +338,17 @@ public class Graph {
     }
 
     public List<?> getNodesAtDistance(Object origin, int distance){
-        return this.getNodesAtDistance(this.getNode(origin.toString()), distance);
+        return this.getNodesAtDistance(this.getNodeClass(origin.toString()), distance);
     }
     public List<?> getNodesAtDistance(Node<?> origin, int distance){
         BfsIterator bfs = new BfsIterator(origin);
-        List<Node<?>> nodes = new ArrayList<>();
+        List<Serializable> nodes = new ArrayList<>();
         while(bfs.ready() && !(bfs.nextIterationLayer() == distance)){ // itera sobre o grafo ate a camada dele for igual a distancia
             bfs.next();
         }
-        nodes.add(bfs.next());
+        nodes.add(bfs.next().getValue());
         while (bfs.ready() && bfs.nextIterationLayer() == distance){ // enquanto a distancia for igual a distancia
-            nodes.add(bfs.next()); // adiciona na lista de nodes que tao na camada
+            nodes.add(bfs.next().getValue()); // adiciona na lista de nodes que tao na camada
         }
         return nodes;
     }
@@ -396,12 +449,8 @@ public class Graph {
         return component;
     }
 
-    public boolean isClique(Object[] nodeKeys){
-        return isClique(getNodes(nodeKeys));
-    }
-
-    public boolean isClique(Node<?>[] nodes){
-        Queue<Node<?>> queue = new LinkedList<>(Arrays.asList(nodes));
+    public boolean isClique(Object[] nodes){
+        Queue<Node<?>> queue = new LinkedList<>(Arrays.asList(getNodes(nodes)));
         while (!queue.isEmpty()){
             Node<?> n = queue.poll();
             int connected = 0;
@@ -419,17 +468,14 @@ public class Graph {
     private Node<?>[] getNodes(Object[] nodeKeys) {
         Node<?>[] nodes = new Node<?>[nodeKeys.length];
         for(int i = 0; i < nodeKeys.length; i++){
-            if(getNode(nodeKeys[i]) != null){
-                nodes[i] = getNode(nodeKeys[i]);
+            if(getNodeClass(nodeKeys[i]) != null){
+                nodes[i] = getNodeClass(nodeKeys[i]);
             }
         }
         return nodes;
     }
-
     public boolean isMaximalClique(Object[] nodeKeys){
-        return isMaximalClique(getNodes(nodeKeys));
-    }
-    public boolean isMaximalClique(Node<?>[] nodes){
+        Node<?>[] nodes = getNodes(nodeKeys);
         if(isClique(nodes)){
             HashSet<Node<?>> checkedNodes = new HashSet<>(Arrays.asList(nodes));
             for(Node<?> n : nodes){
@@ -519,7 +565,7 @@ public class Graph {
     }
 
     public double getNodeBetwenessCentrality(Object nodeKey){
-        Node<?> node = getNode(nodeKey);
+        Node<?> node = getNodeClass(nodeKey);
         Queue<Node<?>> queue = new LinkedList<>(getNodesList());
         int betweenCount = 0;
         int totalPathCount = 0;
@@ -544,7 +590,7 @@ public class Graph {
         int allDistances = 0;
         for(Node<?> n : getNodes()){
             if(n.equals(node)) continue;
-            allDistances += getShortestPathDistance(node, n);
+            allDistances += getPathWeight((getShortestPath(node, n).toArray()));
         }
         return (size()-1)/(double)allDistances;
     }
@@ -583,8 +629,8 @@ public class Graph {
         return graph;
     }
 
-    private int getSavedGraphsAmount(){
-        File graphsFolder = new File(defSaveLocation);
+    private int getSavedGraphsAmount(String location){
+        File graphsFolder = new File(location);
         if(graphsFolder.isDirectory()){
             File[] files = graphsFolder.listFiles();
             if (files != null) {
@@ -593,15 +639,12 @@ public class Graph {
         }
         return 0;
     }
-    public boolean saveToFile(boolean overwrite) throws IOException {
-        return this.saveToFile(defSaveLocation, "Graph" + (getSavedGraphsAmount()+1) + ".txt", overwrite);
+    public boolean saveToFile(String location, boolean overwrite) throws IOException {
+        return this.saveToFile(location, "Graph" + (getSavedGraphsAmount(location)+1) + ".txt", overwrite);
     }
     public boolean saveToFile(String location, String fileName, boolean overwrite) throws IOException {
         if(fileName == null){
-            fileName = "Graph" + getSavedGraphsAmount();
-        }
-        if(location.isEmpty()){
-            location = defSaveLocation;
+            fileName = "Graph" + getSavedGraphsAmount(location);
         }
         fileName += ".txt";
         File file = new File(location + "/" + fileName);
@@ -613,7 +656,7 @@ public class Graph {
         builder.append("*Vertices ").append(this.size()).append("\n");
         Node<?>[] nodes = this.getNodes();
         for(int i = 0; i < nodes.length; i++){
-            builder.append(i+1).append(" \"").append(nodes[i]).append("\"\n");
+            builder.append(i+1).append(" \"").append(nodes[i]).append("\" ").append(encodeSerializable(nodes[i].getValue())).append("\n");
             System.out.print((i+1) + "/" + nodes.length + "\r");
         }
         System.out.println("Complete");
@@ -630,6 +673,22 @@ public class Graph {
         writer.write(builder.toString());
         writer.close();
         return true;
+    }
+
+    private static String encodeSerializable(Serializable object) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream( baos );
+        oos.writeObject(object);
+        oos.close();
+        return Base64.getEncoder().encodeToString(baos.toByteArray());
+    }
+
+    private static Object decodeString(String string) throws IOException, ClassNotFoundException {
+        byte [] data = Base64.getDecoder().decode(string);
+        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+        Object o = ois.readObject();
+        ois.close();
+        return o;
     }
     public static Graph loadFromFile(String location){
         Graph graph = new Graph();
@@ -663,14 +722,15 @@ public class Graph {
                     System.out.println("Loading vertices:");
                     int count = 0;
                     while (line != null && !line.startsWith("*")){
-                        graph.add(line.replaceAll("[\"\n\t]", "").split(" ")[1]);
+                        String[] entries = line.replaceAll("[\"\n\t]", "").split(" ");
+                        graph.add(decodeString(entries[2]));
                         line = reader.readLine();
                         System.out.print(++count + " loaded\r");
                     }
                     System.out.println("Complete");
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
         return graph;
