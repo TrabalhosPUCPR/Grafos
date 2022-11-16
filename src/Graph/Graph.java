@@ -117,15 +117,98 @@ public class Graph {
         return nodes.toArray(new Node<?>[0]);
     }
 
-    public List<Object> getLongestPath(Object originKey, Object destinationKey){ // chama o algoritmo de djikstra com o parametro especifio
+    public List<Node<?>> getLongestPath(Object originKey, Object destinationKey){ // chama o algoritmo de djikstra com o parametro especifio
         return this.getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), false);
     }
 
-    public List<Object> getShortestPath(Object originKey, Object destinationKey){
+    public List<Node<?>> getShortestPath(Object originKey, Object destinationKey){
         return this.getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), true);
     }
+    public int getShortestPathDistance(Object originKey, Object destinationKey){
+        return getPathWeight(getShortOrLongPath(this.getNode(originKey), this.getNode(destinationKey), true).toArray(new Node[0]));
+    }
+    public ArrayList<ArrayList<Node<?>>> getAllShortestPaths(Object originKey, Object destinationKey){
+        return getAllShortestPaths(getNode(originKey), getNode(destinationKey));
+    }
 
-    private List<Object> getShortOrLongPath(Node<?> origin, Node<?> destination, boolean shortest){
+    private ArrayList<ArrayList<Node<?>>> getAllShortestPaths(Node<?> origin, Node<?> destination){
+        if(!this.bfsSearch(origin.toString(), destination.toString())){ // caso nao exista conexao entre a origem e destino, retorna vazio
+            return new ArrayList<>();
+        }
+        // instancializa todas as variaveis:
+        // distancias, visitados, nodes pra visitar, node anterior
+        Map<String, Double> distances = new HashMap<>();
+        distances.put(origin.toString(), 0.0);
+
+        Set<Node<?>> nodesPassed = new HashSet<>();
+        List<Node<?>> nodeToVisit = new ArrayList<>();
+        nodeToVisit.add(origin);
+
+        Map<String, LinkedList<Node<?>>> previousNode = new HashMap<>();
+        while(!nodeToVisit.isEmpty()){ // enquanto a lista que guarda os nodes para visitar nao estiver vazio
+            Node<?> current = getUnvisitedNodeWithMinDistance(nodeToVisit, distances); // pega o proximo node que tem a menor distancia dentro do hashmap
+            Node<?>[] adjacencies = current.getAdjacencies(); // pega as adjacencias do node
+            for(Node<?> n : adjacencies){ // passa por todas as adjacencias
+                if(!nodesPassed.contains(n)){ // se o node adjacente ainda nao foi visitado
+                    Double currentsDistance = distances.get(current.toString()); // pega a distancia do node atual
+                    // soma a distancia do node atual com o peso dela com sua adjacencia, caso for nulo, ele e igual a 0, e caso for pra pegar o caminho mais longo, faz pow com -1
+                    double newDistance = current.getWeight(n) + (currentsDistance == null ? 0 : currentsDistance);
+                    if(!distances.containsKey(n.toString()) || distances.get(n.toString()) > newDistance){ // se o node ainda nao tem uma distancia definida, ou a nova distancia e menor q a que existe
+                        distances.put(n.toString(), newDistance); // troca a distancia e o node anterior
+                        LinkedList<Node<?>> list = new LinkedList<>();
+                        list.add(current);
+                        previousNode.put(n.toString(), list);
+                    }else if(!distances.containsKey(n.toString()) || distances.get(n.toString()) == newDistance){
+                        distances.put(n.toString(), newDistance);
+                        previousNode.get(n.toString()).add(current);
+                    }
+                    if(!nodeToVisit.contains(n) && !n.equals(destination)){ // caso o node ainda nao foi adicionado na lista para visitar e ele nao e igual ao destino
+                        nodeToVisit.add(n); // adiciona na lista para visitar
+                    }
+                }
+            }
+            nodesPassed.add(current); // adiciona o node visitado como visitado
+        }
+        // recria o array do caminho percorrido, pegando o node destino e indo para o node definido como anterior
+        return recreateAllShortPaths(origin, destination, previousNode, distances);
+    }
+    private ArrayList<ArrayList<Node<?>>> recreateAllShortPaths(Node<?> origin, Node<?> destination, Map<String, LinkedList<Node<?>>> previousNode, Map<String, Double> distances){
+        ArrayList<ArrayList<Node<?>>> paths = new ArrayList<>();
+        for(Node<?> prev : previousNode.get(destination.toString())){
+            ArrayList<Node<?>> path = new ArrayList<>();
+            path.add(destination);
+            getPathFrom(origin, prev, previousNode, path);
+            Collections.reverse(path);
+            paths.add(path);
+        }
+        return paths;
+    }
+
+    /**
+     * Recursive function to reconstruct all shortest paths found
+     */
+    private void getPathFrom(Node<?> origin, Node<?> current, Map<String, LinkedList<Node<?>>> previousNode, ArrayList<Node<?>> path){
+        path.add(current);
+        if(!origin.equals(current)){
+            for(Node<?> prev : previousNode.get(current.toString())){
+                getPathFrom(origin, prev, previousNode, path);
+            }
+        }
+    }
+    private ArrayList<Node<?>> recreateShortestPath(Node<?> origin, Node<?> destination, Map<String, Node<?>> previousNode) {
+        ArrayList<Node<?>> path = new ArrayList<>();
+        path.add(destination);
+        Node<?> current = previousNode.get(destination.toString());
+        while(!current.equals(origin)){
+            path.add(current);
+            current = previousNode.get(current.toString());
+        }
+        path.add(origin);
+        Collections.reverse(path);
+        return path;
+    }
+
+    private List<Node<?>> getShortOrLongPath(Node<?> origin, Node<?> destination, boolean shortest){
         if(!this.bfsSearch(origin.toString(), destination.toString())){ // caso nao exista conexao entre a origem e destino, retorna vazio
             return new ArrayList<>();
         }
@@ -159,19 +242,15 @@ public class Graph {
             nodesPassed.add(current); // adiciona o node visitado como visitado
         }
         // recria o array do caminho percorrido, pegando o node destino e indo para o node definido como anterior
-        List<Object> shortestPath = new ArrayList<>();
-        ArrayList<Node<?>> path = new ArrayList<>();
-        path.add(destination);
-        Node<?> current = previousNode.get(destination.toString());
-        while(!current.equals(origin)){
-            path.add(current);
-            current = previousNode.get(current.toString());
+        return recreateShortestPath(origin, destination, previousNode);
+    }
+
+    public int getPathWeight(Node<?>[] path){
+        int weight = 0;
+        for(int i = 0; i < path.length - 1; i++){
+            weight += path[i].getAdjacencyHolder(path[i+1]).getWeight();
         }
-        path.add(origin);
-        Collections.reverse(path);
-        shortestPath.add(path);
-        shortestPath.add(shortest ? distances.get(destination.toString()) : Math.pow(distances.get(destination.toString()), -1));
-        return shortestPath;
+        return weight;
     }
 
     private Node<?> getUnvisitedNodeWithMinDistance(List<Node<?>> nodesToVisit, Map<String, Double> distance){
@@ -439,14 +518,35 @@ public class Graph {
         return list;
     }
 
-    public int getNodeBetwenessCentrality(Node<?> node){
-        // TODO: 11/15/2022 (not yet implemented)
-        return -1;
+    public double getNodeBetwenessCentrality(Object nodeKey){
+        Node<?> node = getNode(nodeKey);
+        Queue<Node<?>> queue = new LinkedList<>(getNodesList());
+        int betweenCount = 0;
+        int totalPathCount = 0;
+        while (!queue.isEmpty()){
+            Node<?> origin = queue.poll();
+            if (origin.equals(node)) continue;
+            for(Node<?> n : getNodes()){
+                if(n.equals(origin) || n.equals(node)) continue;
+                ArrayList<ArrayList<Node<?>>> allShortestPaths = getAllShortestPaths(origin, n);
+                for(ArrayList<Node<?>> path : allShortestPaths){
+                    if(path.contains(node)){
+                        betweenCount++;
+                    }
+                }
+                totalPathCount += allShortestPaths.size();
+            }
+        }
+        return betweenCount / (double)totalPathCount;
     }
 
-    public int getNodeClosenessCentrality(Node<?> node){
-        // TODO: 11/15/2022 (not yet implemented)
-        return -1;
+    public double getNodeClosenessCentrality(Object node){
+        int allDistances = 0;
+        for(Node<?> n : getNodes()){
+            if(n.equals(node)) continue;
+            allDistances += getShortestPathDistance(node, n);
+        }
+        return (size()-1)/(double)allDistances;
     }
 
     @Override
@@ -554,7 +654,7 @@ public class Graph {
                     int count = 0;
                     while (line != null && !line.startsWith("*")){
                         String[] nodes = line.replaceAll("[\t\n]", "").split(" ");
-                        graph.newAdjacency(nodes[0], nodes[1], Integer.parseInt(nodes[2]));
+                        graph.newAdjacency(graph.getNodes()[Integer.parseInt(nodes[0])-1], graph.getNodes()[Integer.parseInt(nodes[1])-1], Integer.parseInt(nodes[2]));
                         line = reader.readLine();
                         System.out.print(++count + " loaded\r");
                     }

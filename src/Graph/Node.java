@@ -106,9 +106,6 @@ public class Node<T> {
     }
     @Override
     public boolean equals(Object obj) {
-        if(obj.getClass() == getClass()){
-            return obj.toString().equals(this.toString());
-        }
-        return false;
+        return obj.toString().equals(this.toString());
     }
 }
