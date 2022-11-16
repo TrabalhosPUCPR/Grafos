@@ -142,7 +142,7 @@ public class GraphMenu {
             switch (printOptions(
                     "Print vertices", "Print arestas", "Print travessia",
                     "Print nodes a distancia X", "Print caminho mais curto", "Print caminho mais longo",
-                    "Voltar")) {
+                    "Print centralidade de proximidade", "Print centralidade de intermediacao", "Voltar")) {
                 case 1 -> {
                     System.out.println("O grafo tem " + graph.size() + " vertices!");
                     System.out.println(Arrays.toString(graph.getNodes()));
@@ -180,6 +180,14 @@ public class GraphMenu {
                     System.out.println(graph.getLongestPath(keys[0], keys[1]));
                 }
                 case 7 -> {
+                    System.out.println("Digite o node para calcular:");
+                    System.out.println(graph.getNodeBetwenessCentrality(getInputString()));
+                }
+                case 8 -> {
+                    System.out.println("Digite o node para calcular:");
+                    System.out.println(graph.getNodeClosenessCentrality(getInputString()));
+                }
+                case 9 -> {
                     return;
                 }
             }
