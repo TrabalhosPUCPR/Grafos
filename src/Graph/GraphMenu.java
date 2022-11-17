@@ -307,7 +307,7 @@ public class GraphMenu {
                 }
                 case 2 -> {
                     ArrayList<Graph> components = graph.getComponents();
-                    if(components == null){
+                    if(components == null || components.size() == 1){
                         System.out.println("O grafo é conexo, portanto, nâo possui mais componentes!");
                     }else{
                         for (Graph g : components) {

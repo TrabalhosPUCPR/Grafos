@@ -473,9 +473,9 @@ public class Graph {
     private Graph getComponent(Node<?> origin){
         Graph component = new Graph(this.directed);
         BfsIterator bfs = new BfsIterator(origin);
-        component.add(origin);
+        component.add(origin.getValue());
         while (bfs.ready()){
-            component.add(bfs.next());
+            component.add(bfs.next().getValue());
         }
         return component;
     }
@@ -543,16 +543,16 @@ public class Graph {
     }
 
     public boolean isEulerian(){
-        List<Node<?>> oddNodes = new ArrayList<>(2);
+        int oddNodes = 0;
         for(Node<?> node : getNodes()){
             if(node.getAdjacencies().length % 2 == 1){
-                oddNodes.add(node);
+                oddNodes++;
             }
-            if(oddNodes.size() > 2){
+            if(oddNodes > 2){
                 return false;
             }
         }
-        return oddNodes.size() == 0 || oddNodes.size() == 2;
+        return oddNodes == 0 || oddNodes == 2;
     }
 
     public boolean isCyclic(){
@@ -617,7 +617,7 @@ public class Graph {
                 totalPathCount += allShortestPaths.size();
             }
         }
-        return betweenCount / (double)totalPathCount;
+        return 2 * (betweenCount/(float)((size() - 1)*(size() - 2)));
     }
 
     public double getNodeClosenessCentrality(Object node){
@@ -626,7 +626,7 @@ public class Graph {
             if(n.equals(node)) continue;
             allDistances += getPathWeight((getShortestPath(node, n).toArray()));
         }
-        return (size()-1)/(double)allDistances;
+        return (1)/(double)allDistances;
     }
 
     @Override
@@ -744,10 +744,7 @@ public class Graph {
                     int count = 0;
                     while (line != null && !line.startsWith("*")){
                         String[] nodes = line.replaceAll("[\t\n]", "").split("(\")");
-                        if(nodes[2].equals("Jr.")){
-                            System.out.println("aaaa");
-                        }
-                        graph.newAdjacency(nodes[1].replace("\"", ""), nodes[2].replace("\"", ""), Integer.parseInt(nodes[4].substring(1)));
+                        graph.newAdjacency(nodes[1].replace("\"", ""), nodes[3].replace("\"", ""), Integer.parseInt(nodes[4].substring(1)));
                         line = reader.readLine();
                         System.out.print(++count + " loaded\r");
                     }
