@@ -83,7 +83,7 @@ public class GraphMenu {
     private void checksMenu(){
         System.out.println("Digite uma opcao para verificar se e real:");
         while (true){
-            switch (printOptions("Conexo", "Euleriano", "Ciclico", "Sair")){
+            switch (printOptions("Conexo", "Euleriano", "Ciclico", "Contem node", "Sair")){
                 case 1 -> {
                     if(graph.isConnected()){
                         System.out.println("O Grafo é conexo!");
@@ -106,6 +106,14 @@ public class GraphMenu {
                     }
                 }
                 case 4 -> {
+                    System.out.println("Digite o rotulo do node");
+                    if(graph.get(getInputString()) == null){
+                        System.out.println("O grafo nao contem este rotulo!");
+                    }else {
+                        System.out.println("O grafo contem este rotulo!");
+                    }
+                }
+                case 5 -> {
                     return;
                 }
             }
@@ -240,21 +248,47 @@ public class GraphMenu {
     }
 
     private void searchMenu(){
-        Object[] keys = getOrgDstInput();
-        switch (printOptions("BFS", "DFS")){
-            case 1 -> {
-                if(this.graph.bfsSearch(keys[0], keys[1])){
-                    System.out.println("Existe caminho do vertice " + keys[0] + " ate " + keys[1]);
-                }else{
-                    System.out.println("Nao existe caminho para chegar no " + keys[1] + " pelo " + keys[0]);
+        System.out.println("Digite uma opcao:");
+        switch (printOptions("Buscar conectividade","Pegar todas adjacencias","Pegar node com maior N de adjacencias","Pegar node com menor N de adjacencias","Sair")){
+            case 1->{
+                Object[] keys = getOrgDstInput();
+                switch (printOptions("BFS", "DFS")){
+                    case 1 -> {
+                        if(this.graph.bfsSearch(keys[0], keys[1])){
+                            System.out.println("Existe caminho do vertice " + keys[0] + " ate " + keys[1]);
+                        }else{
+                            System.out.println("Nao existe caminho para chegar no " + keys[1] + " pelo " + keys[0]);
+                        }
+                    }
+                    case 2 -> {
+                        if(this.graph.dfsSearch(keys[0], keys[1])){
+                            System.out.println("Existe caminho do vertice " + keys[0] + " ate " + keys[1]);
+                        }else{
+                            System.out.println("Nao existe caminho para chegar no " + keys[1] + " pelo " + keys[0]);
+                        }
+                    }
                 }
             }
             case 2 -> {
-                if(this.graph.dfsSearch(keys[0], keys[1])){
-                    System.out.println("Existe caminho do vertice " + keys[0] + " ate " + keys[1]);
-                }else{
-                    System.out.println("Nao existe caminho para chegar no " + keys[1] + " pelo " + keys[0]);
+                String node = getInputString();
+                System.out.print(node + " -> [ ");
+                for(Object value : graph.getAdjacencies(node)){
+                    System.out.print(value + " - p: " + graph.getWeight(node, value));
                 }
+                System.out.println("]");
+            }
+            case 3 -> {
+                Object value = graph.getHighestNOfConnections();
+                System.out.print(value);
+                System.out.println(" com " + graph.getAdjacencies(value).size() + " adjacencias");
+            }
+            case 4 -> {
+                Object value = graph.getLowestNOfConnections();
+                System.out.print(value);
+                System.out.println(" com " + graph.getAdjacencies(value).size() + " adjacencias");
+            }
+            case 5 -> {
+                return;
             }
         }
         continueMenu();

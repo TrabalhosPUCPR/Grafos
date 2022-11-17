@@ -6,7 +6,5 @@ public class Main {
     public static void main(String[] args) {
         DataSet dataSet = new DataSet("src/netflix_titles.csv");
         dataSet.openGraphMenu();
-        GraphMenu menu = new GraphMenu();
-        menu.run();
     }
 }

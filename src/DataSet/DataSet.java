@@ -24,7 +24,6 @@ public class DataSet {
             Scanner scanner =  new Scanner(this.dataFile);
             scanner.nextLine(); // skip first line
             LinkedHashMap<Integer, String> errors = new LinkedHashMap<>();
-            line = 0;
             while (scanner.hasNextLine()){
                 line++;
                 lineString = scanner.nextLine();
@@ -48,7 +47,7 @@ public class DataSet {
                         }
                     }
                 }
-                System.out.print(line + "...\r");
+                System.out.print("Loaded " + line + " lines...\r");
             }
             System.out.println();
             System.out.println("Finished reading " + line + " lines!");
@@ -57,9 +56,8 @@ public class DataSet {
             for(int i : errors.keySet()){
                 System.err.println("Line " + i + ": " + errors.get(i));
             }
-            Thread.sleep(1000);
+            Thread.sleep(300);
         } catch (FileNotFoundException | InterruptedException e) {
-            System.err.println("Erro irrecuperavel na linha + " + line + "; conteudo: " + lineString);
             throw new RuntimeException(e);
         }
     }
