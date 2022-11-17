@@ -77,6 +77,28 @@ public class Graph {
     public int getWeight(Object node1, Object node2){
         return getNodeClass(node1).getAdjacencyHolder(node2).getWeight();
     }
+    public Object getHighestNOfConnections(){
+        int n = 0;
+        Object value = null;
+        for(Node<?> node : this.getNodes()){
+            if(node.getAdjacencies().length > n){
+                n = node.getAdjacencies().length;
+                value = node.getValue();
+            }
+        }
+        return value;
+    }
+    public Object getLowestNOfConnections(){
+        int n = Integer.MAX_VALUE;
+        Object value = null;
+        for(Node<?> node : this.getNodes()){
+            if(node.getAdjacencies().length < n){
+                n = node.getAdjacencies().length;
+                value = node.getValue();
+            }
+        }
+        return value;
+    }
 
     public boolean contains(Object nodeKey){
         return this.nodes.get(nodeKey.toString()) != null;
@@ -92,6 +114,15 @@ public class Graph {
             return null;
         }
     }
+
+    public List<?> getAdjacencies(Object node){
+        List<Object> values = new ArrayList<>();
+        for(Node<?> value : getNodeClass(node).getAdjacencies()){
+            values.add(value.getValue());
+        }
+        return values;
+    }
+
 
     public boolean isDirected(){
         return directed;
@@ -642,11 +673,8 @@ public class Graph {
         }
         return 0;
     }
-    public boolean saveToFile(String location, boolean overwrite) throws IOException {
-        return this.saveToFile(location, "Graph" + (getSavedGraphsAmount(location)+1) + ".txt", overwrite);
-    }
     public boolean saveToFile(String location, String fileName, boolean overwrite) throws IOException {
-        if(fileName == null){
+        if(fileName == null || fileName.isEmpty()){
             fileName = "Graph" + getSavedGraphsAmount(location);
         }
         fileName += ".txt";
