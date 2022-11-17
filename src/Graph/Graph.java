@@ -527,6 +527,9 @@ public class Graph {
     }
 
     public boolean isConnected(){
+        return getComponents().size() == 1;
+    }
+    public boolean isFullyConnected(){
         Queue<Node<?>> queue = new LinkedList<>(getNodesList());
         while (!queue.isEmpty()){
             Node<?> node = queue.poll();
